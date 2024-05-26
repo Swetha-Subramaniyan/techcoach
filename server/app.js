@@ -11,7 +11,7 @@ const decisionRoutes = require('./routes/decisionRoutes');
 require('dotenv').config();
 
 const app = express();
-const PORT = 6005;
+const PORT = process.env.PORT;
 
 app.use(express.json({ limit: "10mb" }));
 app.use(cors());
