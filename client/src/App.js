@@ -16,6 +16,12 @@ import Decision from './Components/pages/Decision/Decision.js';
 import Readd from './Components/pages/Decision/Readd.js';
 import View from './Components/pages/Decision/View.js';
 import Profile from './Components/DashBoard/Profile.js';
+import InnerCircle from './Components/Group/InnerGroup.js';
+import MultipleMemberGroup from './Components/Group/MultipleMemberGroup.js';
+import DisplayInnerCircle from './Components/Group/DisplayInnerCircle.js';
+import AcceptOrNot from './Components/Group/AcceptOrNot.js';
+import Notification from './Components/Notification/Notification.js';
+import SharedDecision from './Components/Group/SharedDecisions.js';
 
 function App() {
   console.log("one is working")
@@ -53,6 +59,18 @@ function App() {
         <Route path='/readd' element={<Readd />} />
         <Route path='/views/:id' element={<View />} />
         {/* <Route path='*' element={<Error/>}/> */}
+
+        {/* Create Group Routes */}
+        <Route path='/innerCircle' element={<InnerCircle />} />
+        <Route path='/group' element={<MultipleMemberGroup />} />
+        <Route path='/innerCircleDisplay' element={<DisplayInnerCircle />} />
+        <Route path='/shareAcceptOrNot' element={<AcceptOrNot />} />
+
+        {/* Notification */}
+        <Route path='/notification' element={<Notification />} />
+
+        <Route path='/sharedDecisions' element={<SharedDecision />} />
+
       </Routes>
     </div>
   );
