@@ -3,14 +3,17 @@ import { Avatar, List, ListItem, ListItemAvatar, ListItemText, Typography, Box, 
 import CheckIcon from '@mui/icons-material/Check';
 import DoneIcon from '@mui/icons-material/Done'; 
 import { useNavigate } from 'react-router-dom';
-import { shareDecisionInInnerCircle, getSharedMembers } from './Network_Call';
+import { shareDecisionInInnerCircle, getSharedMembers, mailToInnerCircleDecisionShare } from './Network_Call';
 import { ToastContainer, toast } from 'react-toastify';
+import withAuth from '../withAuth';
 
 const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
     const [selectedMember, setSelectedMember] = useState(null);
     const [sharedMembers, setSharedMembers] = useState([]);
-    const [loading, setLoading] = useState(true); // Add loading state
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+
+    console.log("innerrrr", decision);
 
     const handleMemberClick = (memberId) => {
         setSelectedMember(prevSelectedMember => prevSelectedMember === memberId ? null : memberId);
@@ -29,7 +32,26 @@ const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
                 toast('Decision shared successfully!');
                 setSelectedMember(null); 
                 await getSharedMembersList(); 
-            } else {
+
+                const selectedMemberDetails = innerCircleDetails.members.find(member => member.user_id === selectedMember);
+                const memberEmail = selectedMemberDetails?.email;
+
+                if (selectedMemberDetails) {
+                    const memberName = selectedMemberDetails.displayname;
+
+                    const decisionSummary = {
+                        decisionName: decision.decision_name,
+                        userStatement: decision.user_statement,
+                        reasons: decision.decision_reason_text.join(', '),
+                        dueDate: decision.decision_due_date,
+                        takenDate: decision.decision_taken_date
+                    };
+
+                    const responseToMail = await mailToInnerCircleDecisionShare(memberEmail, decisionSummary);
+                    console.log("response from the mail", responseToMail);
+                }
+
+            }  else {
                 toast('Failed to share decision.');
             }
         } catch (error) {
@@ -37,6 +59,8 @@ const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
             toast('An error occurred while sharing the decision.');
         }
     };
+
+    console.log("selected memebr", selectedMember);
 
     const getSharedMembersList = async () => {
         const payload = {
@@ -52,7 +76,7 @@ const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
             console.error('Error in fetching the shared members:', error);
             toast('An error occurred while fetching the shared member decision');
         } finally {
-            setLoading(false); // Set loading to false after fetching data
+            setLoading(false); 
         }
     };
 
@@ -85,7 +109,7 @@ const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
                                 selected={selectedMember === member.user_id}
                                 style={{
                                     cursor: isClickable ? "pointer" : "default",
-                                    backgroundColor: sharedMember ? "#d3d3d3" : "white" // Highlight shared members
+                                    backgroundColor: sharedMember ? "#d3d3d3" : "white" 
                                 }}
                             >
                                 <ListItemAvatar>
@@ -131,4 +155,4 @@ const AcceptOrNot = ({ innerCircleDetails, decision, id }) => {
     );
 };
 
-export default AcceptOrNot;
+export default withAuth(AcceptOrNot);

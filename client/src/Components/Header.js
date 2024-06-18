@@ -2,14 +2,32 @@ import React, { useState, useEffect } from 'react';
 import './Header.css';
 import { Link, useNavigate } from 'react-router-dom';
 import tech from './assets/tech.png';
+import { getInnerCircleAcceptNotification } from '../Components/Group/Network_Call';
 
 const Header = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate();
+    const [response, setResponse] = useState(null);
+    const [notAcceptedMembersCount, setNotAcceptedMembersCount] = useState(0);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await getInnerCircleAcceptNotification();
+            console.log("response from notification", response);
+            setResponse(response);
+            if (response && response.notAcceptedMembers && response.groupDetails) {
+                const count = response.notAcceptedMembers.filter(member => 
+                    response.groupDetails[member.group_id] && response.groupDetails[member.group_id].userDetails !== null
+                ).length;
+                setNotAcceptedMembersCount(count);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        console.log('2', token);
         if (token) {
             setIsLoggedIn(true);
         } else {
@@ -19,19 +37,15 @@ const Header = () => {
 
     useEffect(() => {
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            console.log('1', token);
-
+            let token;
             if (token) {
-                localStorage.setItem('token', token);
-                setIsLoggedIn(true); // Set isLoggedIn to true after saving token
+                localStorage.getItem('token', token);
+                setIsLoggedIn(true); 
             }
         } catch (error) {
             console.error('Error setting auth token:', error);
         }
     }, []);
-
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -43,8 +57,8 @@ const Header = () => {
         <div>
             <nav className="navbar navbar-expand-lg f-5">
                 <div className="container-fluid">
-                    <a href="/dashboard" class="image-link">
-                        <img src={tech} alt='' class='image' />
+                    <a href="/dashboard" className="image-link">
+                        <img src={tech} alt='' className='image' />
                     </a>
                     <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarScroll" aria-controls="navbarScroll" aria-expanded="false" aria-label="Toggle navigation">
                         <span className="navbar-toggler-icon"></span>
@@ -56,26 +70,35 @@ const Header = () => {
                                     <li className="nav-item">
                                         <Link to='/dashboard' className="nav-link">Dashboard</Link>
                                     </li>
-                                    {/* <li className="nav-item">
-                                        <Link to='/profile' className="nav-link">Profile</Link>
-                                    </li> */}
                                     <li className="nav-item">
                                         <Link to='/readd' className="nav-link">Decision</Link>
                                     </li>
                                     <li className="nav-item">
-                                        <a href=" https://techcoach4u.wordpress.com/make-decisions-with-confidence/" target="_blank" rel="noopener noreferrer" className="nav-link">Resources</a>
+                                        <a href="http://decisioncoach.techcoach4u.com" target="_blank" rel="noopener noreferrer" className="nav-link">Guide</a>
                                     </li>
 
                                     <li className="nav-item">
                                         <Link to='/innerCircleDisplay' className="nav-link">Inner Circle</Link>
                                     </li>
 
-                                    <li className="nav-item">
-                                        <Link to='/notification' className="nav-link">Notifications</Link>
+                                    <li className="nav-item" style={{marginRight:"0.5rem"}}>
+                                        <Link to='/notification' className="nav-link position-relative">
+                                            Notifications
+                                            {notAcceptedMembersCount > 0 && (
+                                                <span className="position-absolute top-10 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize:"0.6rem"}}>
+                                                    {notAcceptedMembersCount}
+                                                    <span className="visually-hidden">New alerts</span>
+                                                </span>
+                                            )}
+                                        </Link>
                                     </li>
                                     
                                     <li className="nav-item">
-                                        <button onClick={handleLogout} className="btn btn-link nav-link">Logout</button>
+                                        <Link to='/profile' className="nav-link">Profile</Link>
+                                    </li>
+                                    
+                                    <li className="nav-item">
+                                        <Link to='/' onClick={handleLogout} className="nav-link">Logout</Link>
                                     </li>
                                 </>
                             ) : (

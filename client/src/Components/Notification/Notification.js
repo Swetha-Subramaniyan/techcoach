@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Typography, Card, CardContent, Avatar, Tooltip, Box } from '@mui/material';
 import { acceptOrRejectInnerCircle, getInnerCircleAcceptNotification } from '../../Components/Group/Network_Call';
 import { ToastContainer, toast } from 'react-toastify';
+import withAuth from '../withAuth';
 
 const Notification = () => {
     const [notifications, setNotifications] = useState([]);
@@ -11,7 +12,7 @@ const Notification = () => {
         try {
             const response = await getInnerCircleAcceptNotification();
             console.log("response from notification", response);
-            setNotifications(response.notAcceptedMembers);
+            setNotifications(response.notAcceptedMembers.filter(notification => response.groupDetails[notification.group_id].userDetails));
             setResponse(response); 
         } catch (error) {
             console.error('Error in fetching the notifications:', error);
@@ -51,9 +52,7 @@ const Notification = () => {
                         <CardContent>
                             {response && response.groupDetails[notification.group_id] && (
                                 <Box display="flex" alignItems="center" mb={2}>
-                                    <Avatar style={{
-                                        backgroundColor:"#526D82"
-                                    }}>
+                                    <Avatar style={{ backgroundColor: "#526D82" }}>
                                         {getInitials(response.groupDetails[notification.group_id].userDetails.displayname)}
                                     </Avatar>
                                     <Typography variant="body1" style={{ marginLeft: '10px' }}>
@@ -74,9 +73,7 @@ const Notification = () => {
                                             <Avatar
                                                 alt={response.acceptedDetails[notification.group_id].userDetails.displayname}
                                                 src="/static/images/avatar/1.jpg" 
-                                                style={{ margin: '0 5px',
-                                                    backgroundColor:"#526D82"
-                                                 }}
+                                                style={{ margin: '0 5px', backgroundColor: "#526D82" }}
                                             />
                                         </Tooltip>
                                     </Box>
@@ -99,4 +96,4 @@ const Notification = () => {
     );
 };
 
-export default Notification;
+export default withAuth(Notification);

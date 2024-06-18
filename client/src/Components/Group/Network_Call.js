@@ -286,6 +286,78 @@ const EditCommentAdded = async (commentId, editedContent) =>{
     }
 }
 
+const mailToInnerCircleDecisionShare = async (memberEmail, decisionSummary) =>{
+    const token = localStorage.getItem('token');
+    console.log("jjsjsjss",decisionSummary );
+    try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/group/innerCircleDecisionShare`,
+        {memberEmail, decisionSummary},  
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        console.log("response for edit comments", response);
+        return response.data; 
+    } catch (error) {
+        console.error("Error fetching editted comments", error);
+        throw error;
+    }
+}
+
+
+const innerCirclePostComment = async (decision, groupMemberID,commentText, email) =>{
+    const token = localStorage.getItem('token');
+    try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/group/innerCirclePostComment`,
+        {decision, groupMemberID,commentText, email},  
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        console.log("response for edit comments", response);
+        return response.data; 
+    } catch (error) {
+        console.error("Error fetching editted comments", error);
+        throw error;
+    }
+}
+
+const innerCircleInvitation = async (email) =>{
+    const token = localStorage.getItem('token');
+    try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/group/innerCircleInvitation`,
+        {email},
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        console.log("response for Inner Circle Invitation", response);
+        return response.data; 
+    } catch (error) {
+        console.error("Error Inviting the person to the Decision App", error);
+        throw error;
+    }
+}
+
+const getSharedDecisionDetails = async () =>{
+    const token = localStorage.getItem('token');
+    try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/group/getSharedDecisionDetails`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        console.log("response for get shared decision details", response);
+        return response.data; 
+    } catch (error) {
+        console.error("Error in getting shared decision details", error);
+        throw error;
+    }
+}
 
 
 export { 
@@ -305,5 +377,9 @@ export {
     getSharedComments,
     deleteCommentAdded,
     postReplyComment,
-    EditCommentAdded
+    EditCommentAdded,
+    mailToInnerCircleDecisionShare,
+    innerCirclePostComment,
+    innerCircleInvitation,
+    getSharedDecisionDetails
  };

@@ -24,8 +24,12 @@ router.put("/postCommentForDecision",groupController.postCommentForDecision);
 router.get("/comments",groupController.getComments);
 router.post("/getSharedComments",groupController.getSharedComments);
 router.delete("/removeCommentsAdded",groupController.removeCommentsAdded);
-router.get("/sharedDecisionCount",groupController.sharedDecisionCount);
 router.post("/postReplyComment",groupController.postReplyComment);
 router.put("/editCommentsAdded",groupController.editCommentsAdded);
+router.post("/innerCircleDecisionShare",groupController.innerCircleDecisionShare);
+router.post("/innerCirclePostComment",groupController.innerCirclePostComment);
+router.post("/innerCircleInvitation",groupController.innerCircleInvitation);
+router.get("/getSharedDecisionDetails",groupController.getSharedDecisionDetails);
+
 
 module.exports = router;
