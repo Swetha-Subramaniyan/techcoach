@@ -195,7 +195,7 @@ const Profile = () => {
         </div>
         <div className='delete-account'>
           <p onClick={handleDeleteAccount}>Delete Account</p>
-        </div>
+        </div> 
         <ToastContainer/>
       </div>
     </div>

@@ -74,11 +74,19 @@ const Decision = () => {
     "Sales", "Services", "Statutory Compliance", "Supplier"
   ];
 
+  const decisionDriverTags = [
+    "Fully Data Driven","Not Data Driven", "Partially Data Driven", 
+  ];
+
   const filteredTags = tags.filter(tag =>
     tag.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredAdvancedTags = advancedTags.filter(tag =>
+    tag.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDecisionDriverTags = decisionDriverTags.filter(tag =>
     tag.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -200,6 +208,10 @@ const Decision = () => {
     }
   };
 
+  const handleCancel = () => {
+    navigate('/readd'); 
+  };
+
   return (
     <div>
       <h3 className='header'>Details</h3>
@@ -284,7 +296,7 @@ const Decision = () => {
                   {errors.decision_reason && <span className="error">{errors.decision_reason}</span>}
                 </div>
               ))}
-              <button className='btnn2' type='button' onClick={handleAddReason}>Add More Reason</button>
+              <button className='btnn2' type='button' onClick={handleAddReason}>Add Another Reason</button>
             </div>
             <div className='form-group'>
               <label>Select Tags <span className="required" style={{color:"red"}}>*</span></label>
@@ -335,42 +347,76 @@ const Decision = () => {
               </button>
             </div>
             {showAdvancedTags && (
-              <div className='form-group'>
-                <label>Advanced Tags:</label>
-                <div
-                  className='tag-container'
-                  style={{
-                    maxHeight: dropdownHeight,
-                    maxWidth: dropdownWidth,
-                    overflowY: 'auto',
-                    border: '1px solid #ccc',
-                    borderRadius: '5px',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    marginBottom: '10px',
-                    margin: 'auto',
-                  }}
-                >
-                  {filteredAdvancedTags.map((tag, index) => (
-                    <div key={index} className='tag-item'>
-                      <label className='tag-label' htmlFor={tag}>{tag}
-                        <input
-                          type="checkbox"
-                          id={tag}
-                          checked={selectedTags.includes(tag)}
-                          onChange={() => handleTagSelection(tag)}
-                        />
-                      </label>
-                    </div>
-                  ))}
+              <>
+                <div className='form-group'>
+                  <label>Advanced Tags:</label>
+                  <div
+                    className='tag-container'
+                    style={{
+                      maxHeight: dropdownHeight,
+                      maxWidth: dropdownWidth,
+                      overflowY: 'auto',
+                      border: '1px solid #ccc',
+                      borderRadius: '5px',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      marginBottom: '10px',
+                      margin: 'auto',
+                    }}
+                  >
+                    {filteredAdvancedTags.map((tag, index) => (
+                      <div key={index} className='tag-item'>
+                        <label className='tag-label' htmlFor={tag}>{tag}
+                          <input
+                            type="checkbox"
+                            id={tag}
+                            checked={selectedTags.includes(tag)}
+                            onChange={() => handleTagSelection(tag)}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+                <div className='form-group'>
+                  <label>Decision Driver Tags:</label>
+                  <div
+                    className='tag-container'
+                    style={{
+                      maxHeight: dropdownHeight,
+                      maxWidth: dropdownWidth,
+                      overflowY: 'auto',
+                      border: '1px solid #ccc',
+                      borderRadius: '5px',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      marginBottom: '10px',
+                      margin: 'auto',
+                    }}
+                  >
+                    {filteredDecisionDriverTags.map((tag, index) => (
+                      <div key={index} className='tag-item'>
+                        <label className='tag-label' htmlFor={tag}>{tag}
+                          <input
+                            type="checkbox"
+                            id={tag}
+                            checked={selectedTags.includes(tag)}
+                            onChange={() => handleTagSelection(tag)}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
-          <div style={{display:"flex", justifyContent:"center"}}>
+          <div style={{display:"flex", justifyContent:"center", gap: "10px"}}>
             <input type='submit' value={id ? "Update" : "Save"}  />
-          </div>
+            <input type='button' value="Cancel" onClick={handleCancel} className="cancel-button" />
+            </div>
         </form>
       </div>
       <ToastContainer />
