@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Card, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Grid, Box, CircularProgress } from '@mui/material';
+import { Card, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Grid, Box, CircularProgress, Button } from '@mui/material';
 import { AssignmentTurnedIn, HourglassEmpty, Share } from '@mui/icons-material';
 import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
 import './Nav.css';
@@ -24,19 +24,19 @@ const Nav = () => {
     const fetchSharedDecisionsDetails = async () => {
       try {
         const details = await getSharedDecisionDetails();
-        
+
         setSharedDecisionDetails(details);
-        setLoading(false); 
+        setLoading(false);
       } catch (error) {
         console.error("Failed to fetch inner circle details", error);
-        setLoading(false); 
+        setLoading(false);
       }
     };
     fetchSharedDecisionsDetails();
   }, []);
 
   const sharedDecisionCount = Array.isArray(sharedDecisionDetails?.sharedDecisions) ? sharedDecisionDetails.sharedDecisions.length : 0;
-  console.log("shhhhhhhhhhhh", sharedDecisionCount);
+  // console.log("shhhhhhhhhhhh", sharedDecisionCount);
 
   useEffect(() => {
     const loadData = async () => {
@@ -79,28 +79,38 @@ const Nav = () => {
           }
         });
         const sharedDecisions = response.data.decisionCount;
-        console.log("countttt", sharedDecisions);
+        // console.log("countttt", sharedDecisions);
 
         setReceivedDecisionsCount(sharedDecisions);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error.message);
-        setLoading(false); 
+        setLoading(false);
       }
     };
 
     sharedDecisionCount();
   }, []);
 
+  // const filteredData = data.filter(decision => {
+  //   return (
+  //     decision.user_id === loggedInUserId &&
+  //     ((decision.decision_name && decision.decision_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (decision.tagsArray && decision.tagsArray.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+  //       (!decision.decision_taken_date))
+  //   );
+  // });
+
   const filteredData = data.filter(decision => {
-    return (
-      decision.user_id === loggedInUserId &&
-      ((decision.decision_name && decision.decision_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (decision.tagsArray && decision.tagsArray.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-        (!decision.decision_taken_date))
+    const decisionNameMatch = decision.decision_name && decision.decision_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const tagMatch = Array.isArray(decision.tags) && decision.tags.some(tag => 
+      tag.tag_name && tag.tag_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const isPending = !decision.decision_taken_date;
+    return decision.user_id === loggedInUserId && (decisionNameMatch || tagMatch || isPending);
   });
 
+  
   const liveDecisionsCount = filteredData.length;
   const pendingDecisionsCount = pendingDecisionsData.length;
 
@@ -183,6 +193,9 @@ const Nav = () => {
                       <TableCell sx={{ backgroundColor: '#526D82', color: '#ffffff', border: '1px solid #ffffff' }}>
                         <Typography variant="h6">Decision Details</Typography>
                       </TableCell>
+                      <TableCell sx={{ backgroundColor: '#526D82', color: '#ffffff', border: '1px solid #ffffff' }}>
+                        <Typography variant="h6">Action</Typography>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -191,6 +204,22 @@ const Nav = () => {
                         <TableCell sx={{ border: '1px solid #526D82' }}>{decision.decision_name}</TableCell>
                         <TableCell sx={{ border: '1px solid #526D82' }}>{new Date(decision.decision_due_date).toLocaleDateString()}</TableCell>
                         <TableCell sx={{ border: '1px solid #526D82' }}>{decision.user_statement}</TableCell>
+                        <TableCell sx={{ border: '1px solid #526D82' }}>
+                          <Button
+                            onClick={() => navigate(`/decision/${decision.decision_id}`)}
+                            sx={{
+                              backgroundColor: '#1976d2',
+                              color: '#fff',
+                              '&:hover': {
+                                backgroundColor: '#1565c0',
+                              },
+                              padding: '6px 12px',
+                              fontSize: '14px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            Edit
+                          </Button>                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

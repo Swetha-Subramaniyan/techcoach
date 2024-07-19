@@ -70,7 +70,7 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmation = window.confirm("Are you sure you want to delete your account? This action cannot be undone.");
+    const confirmation = window.confirm("Are you sure you want to delete your account? Your data is protected through Encryption. At any point you want us to delete your data, you can use the delete account option. We recommend that you download a copy of the data before you delete your account This action cannot be undone.");
     if (confirmation) {
       try {
         const token = localStorage.getItem('token');
@@ -94,8 +94,8 @@ const Profile = () => {
       'Decision Due Date': new Date(decision.decision_due_date).toLocaleDateString(),
       'Decision Taken Date': decision.decision_taken_date ? new Date(decision.decision_taken_date).toLocaleDateString() : '--',
       'Decision Details': decision.user_statement,
-      'Tags': decision.tagsArray ? decision.tagsArray.join(',') : '',
-      'Decision Reasons': decision.decision_reason_text ? decision.decision_reason_text.join(',') : ''
+      'Tags': decision.tags ? decision.tags.map(tag => tag.tag_name).join(', ') : '',
+    'Decision Reasons': decision.decision_reason ? decision.decision_reason.map(reason => reason.decision_reason_text).join(', ') : ''
     }));
 
     const worksheetDecisions = XLSX.utils.json_to_sheet(decisionData);
@@ -111,56 +111,77 @@ const Profile = () => {
     }
   };
 
+
   const handleDownloadProfile = () => {
     const doc = new jsPDF();
   
     doc.setFontSize(20);
-    doc.text('Profile Data', 20, 20);
+    doc.text('Profile Data:', 20, 20);
   
     const extractData = (data) => {
       if (Array.isArray(data)) {
-        return data.map(item => (item.value ? item.value.trim() : '')).join(', ');
+        return data.map(item => (item.value ? item.value.trim() : '')).join('\n\n'); 
       }
       return data ? data.trim() : 'N/A';
     };
   
     const profileData = [
-      { category: 'Strength', details: extractData(formData.strength), color: [13,97,16] }, // Light Green
-      { category: 'Weakness', details: extractData(formData.weakness), color: [41, 128, 185] }, // Primary
-      { category: 'Opportunity', details: extractData(formData.opportunity), color: [165, 42, 42] }, // Pink
-      { category: 'Threat', details: extractData(formData.threat), color: [240, 150, 180] }, // Light Pink
+      { category: 'Strength', details: extractData(formData.strength), color: [13, 97, 16] },
+      { category: 'Weakness', details: extractData(formData.weakness), color: [41, 128, 185] },
+      { category: 'Opportunity', details: extractData(formData.opportunity), color: [153, 77, 28] },
+      { category: 'Threat', details: extractData(formData.threat), color: [165, 42, 42] }
     ];
   
+    let yPos = 40;
+    const cellWidth = (doc.internal.pageSize.width - 60) / 2; 
+    const cellHeight = 50; // Adjust cell height as needed
+    const rowSpacing = 80; // Adjust vertical spacing between rows
+    const colSpacing = 10; // Adjust horizontal spacing between columns
+  
     profileData.forEach((item, index) => {
+      const rowIndex = Math.floor(index / 2);
+      const colIndex = index % 2;
+  
+      const xPos = 20 + (colIndex * (cellWidth + colSpacing)); 
+  
+      // Set cell properties
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(item.color[0], item.color[1], item.color[2]);
+      doc.text(item.category, xPos, yPos + (rowIndex * (cellHeight + rowSpacing)) - 10);
+  
+      // Create autoTable for each cell
       doc.autoTable({
-        startY: index === 0 ? 30 : doc.lastAutoTable.finalY + 10,
+        startY: yPos + (rowIndex * (cellHeight + rowSpacing)),
+        margin: { left: xPos },
         head: [[item.category]],
-        body: item.details.split(', ').map(detail => [detail]),
+        body: item.details.split('\n\n').map(detail => [detail]),
         theme: 'grid',
         headStyles: {
-          fillColor: item.color, 
-          textColor: [255, 255, 255], // White text
-          fontStyle: 'bold',
-          halign: 'center', 
+          fillColor: item.color,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
         },
         styles: {
-          cellPadding: 4, 
-          textColor:'black',
+          cellPadding: 4,
+          textColor: 'black',
           fontSize: 12,
-          halign: 'left',
-          valign: 'middle', 
-          lineColor: 'black', 
-          lineWidth: 0.1, 
+          valign: 'middle',
+          lineWidth: 0.1,
+          cellWidth: cellWidth - 10 
         },
         alternateRowStyles: { fillColor: [240, 240, 240] },
+        rowStyles: {
+          0: { fillColor: [240, 240, 240] },
+          1: { fillColor: [245, 230, 235] }
+        }
       });
     });
   
     doc.save('profile_data.pdf');
     toast('Profile data downloaded successfully');
   };
-  
-  
+   
   if (loading) {
     return (
       <div className="loading-spinner">
@@ -246,7 +267,7 @@ const Profile = () => {
           <p onClick={handleDownloadData}>Download my Decision data</p>
         </div>
         <div className='download-profile'>
-        <p onClick={handleDownloadProfile}>Download Profile data</p>
+          <p onClick={handleDownloadProfile}>Download Profile data</p>
         </div>
         <ToastContainer />
       </div>
