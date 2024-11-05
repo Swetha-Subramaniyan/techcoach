@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Pagination, IconButton, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, CircularProgress, Select, MenuItem } from '@mui/material';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { MdDelete, MdModeEdit, MdLink } from 'react-icons/md';
+import { FaShareAlt } from "react-icons/fa";
 import { GrFormView } from 'react-icons/gr';
 import { DataGrid } from '@mui/x-data-grid';
 import 'react-toastify/dist/ReactToastify.css';
@@ -76,6 +77,7 @@ const Readd = () => {
     }
   };
 
+  
   const handleSortByDueDate = () => {
     const sortedData = [...data].sort((a, b) => {
       const dateA = new Date(a.decision_due_date);
@@ -185,6 +187,13 @@ const Readd = () => {
                     style={{ color: '#526D82' }}
                   >
                     <GrFormView />
+                  </IconButton>
+                  <IconButton
+                    component={Link}
+                    to={`/sharecircle/${decision.decision_id}`}
+                    style={{ color: '#526D82' }}
+                  >
+                    <FaShareAlt className='fs-5' />
                   </IconButton>
                   <IconButton
                     component={Link}

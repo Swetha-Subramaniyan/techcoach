@@ -191,34 +191,37 @@ const Profile = () => {
     );
   }
 
-  const handleViewLinkedDecisions= () =>{
-
-  }
-
   return (
     <div className="card1">
       <div >
-        <h3>Personal Details</h3>
-        <div className='user-details'>
-          <div>
-            <strong>Username:</strong>
-            <span>{userData.displayname}</span>
+        <h3>Profile</h3>
+        <div className=''>
+          <div className='data-aroundd'>
+            <div>
+              {userData.profilePicture && (
+                <div>
+                  <img src={userData.profilePicture} alt="Profile" className="profile-picture" />
+                </div>
+              )}
+            </div>
+            <button className='linked-decisions'>
+              <Link to='/getall' className='linked-decisions'>
+                <p>View Linked Decisions</p>
+              </Link>
+            </button>
           </div>
-          <div>
-            <strong>Email:</strong>
-            <span>{userData.email}</span>
-          </div>
-          <div>
-            {userData.profilePicture && (
-              <div>
-                <img src={userData.profilePicture} alt="Profile" className="profile-picture" />
-              </div>
-            )}
-          </div>
+        </div>
+        <div className='users-name'>
+          <strong>Username:</strong>
+          <span>{userData.displayname}</span>
+        </div>
+        <div>
+          <strong>Email:</strong>
+          <span>{userData.email}</span>
         </div>
         <div className='details'>
           <Link to='/profiletab'>
-            <button className='profiletab'>Add Personal Detail</button>
+            <button className='profiletab'>Edit Detail</button>
           </Link>
           <div>
             <Link to='/profiletab'>
@@ -232,6 +235,12 @@ const Profile = () => {
               <strong>Gender: </strong>
               <span>{formData.gender}</span>
             </div> */}
+            <div className='addition-one'>
+              <p><b>Desc:</b> Your ability to take better decisions is influenced by your Self Awareness. Profile section enables you to add more details about yourself that can be aligned with your decisions.</p>
+              <a href="https://academy.greenestep.com/courses/swot-analysis/" className='analysis' target="_blank" rel="noopener noreferrer">
+                SWOT Analysis
+              </a>
+            </div>
             {formData.attitude && (
               <div className="sub-card">
                 <strong>Attitude: </strong>
@@ -274,9 +283,6 @@ const Profile = () => {
         <div className='download-profile'>
           <p onClick={handleDownloadProfile}>Download Profile data</p>
         </div>
-        <Link to='/getall' className='linked-decisions'>
-            <p>View Linked Decisions</p>
-        </Link>
         <ToastContainer />
       </div>
       <center>
