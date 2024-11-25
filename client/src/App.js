@@ -6,6 +6,8 @@ import 'bootstrap/dist/js/bootstrap.js';
 import 'react-toastify/dist/ReactToastify.css';
 import Home from './Components/Home';
 import Header from './Components/Header';
+import Admin from './Components/Admin/Admin.js';
+import AdminView from './Components/Admin/AdminView.js';
 import Decision from './Components/pages/Decision/Decision.js';
 import Readd from './Components/pages/Decision/Readd.js';
 import View from './Components/pages/Decision/View.js';
@@ -32,6 +34,7 @@ import DecisionGroup from './Components/Decision_Circle/DecisionGroup.js';
 import ShowUsers from './Components/Decision_Circle/ShowUsers.js';
 import ShareCircleGroup from './Components/Decision_Circle/ShareCircleGroup.js';
 import MemberSharedDecisions from './Components/Decision_Circle/MemberSharedDecisions.js';
+import SharedDecisionCircle from './Components/Decision_Circle/SharedDecisionCircle.js';
 
 function App() {
   console.log("one is working")
@@ -52,6 +55,8 @@ function App() {
       <Routes>
         {/* Dashboard Routes */}
         <Route path='/' element={<Home />} />
+        <Route path='/admin' element={<Admin />} />
+        <Route path='/adminView/:id' element={<AdminView />} />
         <Route path='/dashboard' element={<DashboardRedirect />} />
         <Route path='/decision' element={<Decision />} />
         <Route path='/decisioncircle' element={<DecisionCircle />} />
@@ -99,6 +104,7 @@ function App() {
         <Route path='/sharedDecisions' element={<SharedDecision />} />
         <Route path='/sharedByMe' element={<ShareWithMe />} />
         <Route path='/receivedDecisions' element={<ReceivedDecisionsTab />} />
+        <Route path='/sharedDecisionCircle' element={<SharedDecisionCircle />} />
 
 
         <Route path='/group' element={<MultipleMemberGroup />} />

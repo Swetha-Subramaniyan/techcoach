@@ -4,7 +4,9 @@ import { Edit as EditIcon } from '@mui/icons-material';
 import { getSharedDecisions, postCommentForDecision, deleteCommentAdded, EditCommentAdded, innerCirclePostComment } from '../../Components/Group/Network_Call';
 import { ToastContainer, toast } from 'react-toastify';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { Link } from 'react-router-dom';
 import withAuth from '../withAuth';
+import './SharedDecision.css';
 
 const SharedDecision = () => {
     const [sharedDecisions, setSharedDecisions] = useState([]);
@@ -17,7 +19,8 @@ const SharedDecision = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [autocompleteValue, setAutocompleteValue] = useState('');
     const [loading, setLoading] = useState(true);
-    const [buttonLoading, setButtonLoading] = useState({}); // State to track loading status for buttons
+    const [buttonLoading, setButtonLoading] = useState({});
+    
 
     const fetchSharedDecisions = async () => {
         try {
@@ -159,6 +162,17 @@ const SharedDecision = () => {
     };
 
     return (
+    <>
+        <div className='sharedDecision-button'>
+            <button className='sharedDecision-inner'>
+                Inner Circle Decisions 
+            </button>
+            <Link to='/sharedDecisionCircle'>
+            <button className='sharedDecision-decision'>
+                Decision Circle Decisions
+            </button>
+            </Link>
+        </div>
         <Box p={3}>
             <h2>Inner Circle Decisions:</h2>
             {loading ? (
@@ -384,7 +398,6 @@ const SharedDecision = () => {
                                                             </Grid>
                                                         </Grid>
                                                     </Box>
-
                                                 </CardContent>
                                             </Card>
                                         </div>
@@ -403,7 +416,6 @@ const SharedDecision = () => {
                     )}
                 </>
             )}
-
             <Popover
                 open={isPopoverOpen}
                 anchorEl={anchorEl}
@@ -446,6 +458,7 @@ const SharedDecision = () => {
             </Popover>
             <ToastContainer />
         </Box>
+</>
     );
 };
 
