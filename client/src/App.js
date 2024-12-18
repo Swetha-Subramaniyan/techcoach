@@ -4,6 +4,7 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.js';
 import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import Home from './Components/Home';
 import Header from './Components/Header';
 import Admin from './Components/Admin/Admin.js';
@@ -35,6 +36,8 @@ import ShowUsers from './Components/Decision_Circle/ShowUsers.js';
 import ShareCircleGroup from './Components/Decision_Circle/ShareCircleGroup.js';
 import MemberSharedDecisions from './Components/Decision_Circle/MemberSharedDecisions.js';
 import SharedDecisionCircle from './Components/Decision_Circle/SharedDecisionCircle.js';
+import AdvancedProfile from './Components/pages/Profile_Table/AdvancedProfile.js';
+import AdvancedProfileTable from './Components/pages/Profile_Table/AdvancedProfileTable.js';
 
 function App() {
   console.log("one is working")
@@ -46,7 +49,28 @@ function App() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
     };
+
+    const setupAxiosInterceptors = () => {
+      axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          if (error.response && error.response.status === 401) {
+            toast.error('Session expired. Please log in again.', {
+              position: 'top-right',
+              autoClose: 5000,
+            });
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_id');
+            window.location.href = '/'; 
+          }
+          return Promise.reject(error);
+        }
+      );
+    };
+
+
     setAuthToken();
+    setupAxiosInterceptors();
   },[]); 
 
   return (
@@ -66,6 +90,8 @@ function App() {
 
         {/* Profile Routes */}
         <Route path='/profiletab' element={<ProfileTab />} />
+        <Route path = '/advancedProfile' element={<AdvancedProfile />} />
+        <Route path = '/advancedProfileTable' element={<AdvancedProfileTable />} />
 
         {/* Soft_Skills Routes */}
         <Route path='/skillget' element={<Skillget />} />

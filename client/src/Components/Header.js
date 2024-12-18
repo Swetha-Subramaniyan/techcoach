@@ -5,6 +5,7 @@ import tech from './assets/tech.png';
 import { getInnerCircleAcceptNotification } from '../Components/Group/Network_Call';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const Header = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,6 +36,15 @@ const Header = () => {
             setIsAdmin(response.data.isAdmin || false);
         } catch (error) {
             console.error('Error fetching User type:',error);
+            if (error.response && error.response.status === 401) {
+                toast.error('Session timed out. Please log in again.');
+                localStorage.removeItem('token'); 
+                localStorage.removeItem('user_id');
+                setIsLoggedIn(false);
+                navigate('/'); 
+            } else {
+                toast.error('An error occurred. Please try again.');
+            }
             setIsAdmin(false);
         }
     }
@@ -118,6 +128,9 @@ const Header = () => {
                                         <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
                                             <li>
                                                 <Link to='/profile' className="dropdown-item">Profile</Link>
+                                            </li>
+                                            <li>
+                                                <Link to='/advancedProfile' className="dropdown-item">Advanced-Profile</Link>
                                             </li>
                                             <li>
                                                 <Link to='/skillget' className="dropdown-item">Soft Skills</Link>

@@ -314,6 +314,7 @@ import axios from 'axios';
 
 const MemberSharedDecisions = () => {
     const [groups, setGroups] = useState(null);
+    const [user, setUser] = useState();
     const [decisions, setDecisions] = useState([]);
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -330,13 +331,13 @@ const MemberSharedDecisions = () => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const groupName = params.get('group_name');
-    const groupMemberIds = members.map((member) => member.user_id);
 
 
     useEffect(() => {
         if (groupId) {
             fetchGroupDetails();
             fetchSharedDecisions();
+            fetchGroupExtra();
         }
     }, [groupId]);
 
@@ -354,11 +355,27 @@ const MemberSharedDecisions = () => {
                 setGroups(response.data.group);
                 setMembers(response.data.members);
             }
+            console.log('details',response.data)
         } catch (err) {
             toast.error('An error occurred while fetching the group details.');
             console.error(err);
         }
     };
+
+    const fetchGroupExtra = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/group/getGroupDetails/${groupId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            })
+            setUser(response.data)
+            console.log('Group Admin Details:', response.data);
+        } catch (err) {
+            console.log("An Occured fetching data", err)
+        }
+    }
 
     const fetchSharedDecisions = async () => {
         try {
@@ -400,7 +417,7 @@ const MemberSharedDecisions = () => {
         }
     };
 
-    const handleMailToPostComment = async (decisionId, groupMemberIds, email) => {
+    const handleMailToPostComment = async (decisionId, email) => {
         const comment = newComments[decisionId]?.trim();
         if (!comment) {
             return toast.error('Comment cannot be empty');
@@ -413,7 +430,7 @@ const MemberSharedDecisions = () => {
                 throw new Error(`Decision with ID ${decisionId} not found`);
             }
             const responseToPostEmailComment = await mailToDecisionCirclePostComment(
-                decision, groupMemberIds, comment, email
+                decision, groupId, comment, email
             );
             toast.success('Comment posted and email sent successfully');
             console.log('Response to post email comment:', responseToPostEmailComment);
@@ -434,7 +451,7 @@ const MemberSharedDecisions = () => {
                 ...prevComments,
                 [decisionId]: response || [],
             }));
-            console.log('babababa', response);
+            console.log('comments:', response);
         } catch (error) {
             console.error('Error fetching comments:', error);
         }
@@ -499,6 +516,20 @@ const MemberSharedDecisions = () => {
             {groups && (
                 <div className="group-details">
                     <h4>{groupName || groups.group_name}</h4>
+                    {user && user.created_by ? (
+                        <div className="group-adminContainer">
+                            <Card key={user.created_by} className="group-adminCard">
+                                <CardContent className="group-adminCardContent">
+                                    <p className="group-adminLabel"><b>Admin</b></p>
+                                    <Typography variant="body1" className="group-userInfo">
+                                        {user.created_by} ({user.creator_email})
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    ) : (
+                        <p className="loadingText">Loading user data...</p>
+                    )}
                     {members.length > 0 ? (
                         <ul className="group-members">
                             {members.map((member) => (
@@ -612,8 +643,8 @@ const MemberSharedDecisions = () => {
                                                     {buttonLoading[decision.decision_id] ? <CircularProgress size={24} /> : 'Post Comment'}
                                                 </button>
 
-                                                {/* <button
-                                                    onClick={() => handleMailToPostComment(decision.decision_id, groupMemberIds)}
+                                                <button
+                                                    onClick={() => handleMailToPostComment(decision.decision_id)}
                                                     disabled={buttonLoading[decision.decision_id + '_email']}
                                                     style={{
                                                         padding: '8px 16px',
@@ -625,7 +656,7 @@ const MemberSharedDecisions = () => {
                                                     }}
                                                 >
                                                     {buttonLoading[decision.decision_id + '_email'] ? <CircularProgress size={24} /> : 'Post & Email'}
-                                                </button> */}
+                                                </button>
                                             </div>
                                         </div>
                                     </CardContent>

@@ -527,7 +527,7 @@ const getSharedDecisions = async (req, res) => {
             JOIN techcoach_lite.techcoach_groups g ON sd.groupId = g.id
             WHERE sd.groupMember = ? AND g.type_of_group = 'inner_circle'
         `;
-        
+
         const sharedDecisions = await conn.query(sharedDecisionsQuery, [userId]);
 
         if (sharedDecisions.length === 0) {
@@ -662,6 +662,43 @@ const getSharedDecisions = async (req, res) => {
 };
 
 
+// const getSharedwithDecisionsCount = async (req, res) => {
+//     const userId = req.user.id;
+//     let conn;
+
+//     try {
+//         conn = await getConnection();
+//         await conn.beginTransaction();
+
+//         // Optimized query to directly count the shared decisions
+//         const [sharedDecisionsCount] = await conn.query(`
+//             SELECT COUNT(DISTINCT tsd.id) AS count
+//             FROM techcoach_lite.techcoach_shared_decisions tsd
+//             JOIN techcoach_lite.techcoach_group_members tgm
+//             ON tsd.groupId = tgm.group_id
+//             WHERE tgm.member_id = ?
+//         `, [userId]);
+
+//         await conn.commit();
+
+//         // Convert BigInt to a regular Number
+//         const decisionCount = Number(sharedDecisionsCount.count || 0);
+
+//         if (decisionCount === 0) {
+//             res.status(200).json({ message: 'No decisions fetched', decisionCount });
+//         } else {
+//             res.status(200).json({ message: 'Shared Notification Count Fetched Successfully', decisionCount });
+//         }
+//     } catch (error) {
+//         console.error('Error fetching Shared Notification Count:', error);
+//         if (conn) await conn.rollback();
+//         res.status(500).json({ error: 'An error occurred while processing your request' });
+//     } finally {
+//         if (conn) conn.release();
+//     }
+// };
+
+
 const getSharedwithDecisionsCount = async (req, res) => {
     const userId = req.user.id;
     let conn;
@@ -670,25 +707,51 @@ const getSharedwithDecisionsCount = async (req, res) => {
         conn = await getConnection();
         await conn.beginTransaction();
 
-        // Optimized query to directly count the shared decisions
-        const [sharedDecisionsCount] = await conn.query(`
+        // Query for 'inner_circle' shared decisions count (excluding current user)
+        const innerCircleQuery = `
             SELECT COUNT(DISTINCT tsd.id) AS count
             FROM techcoach_lite.techcoach_shared_decisions tsd
-            JOIN techcoach_lite.techcoach_group_members tgm
-            ON tsd.groupId = tgm.group_id
+            JOIN techcoach_lite.techcoach_decision td ON tsd.decisionId = td.decision_id
+            JOIN techcoach_lite.techcoach_groups tg ON tsd.groupId = tg.id
+            JOIN techcoach_lite.techcoach_group_members tgm ON tg.id = tgm.group_id
             WHERE tgm.member_id = ?
-        `, [userId]);
+            AND tg.type_of_group = 'inner_circle'
+            AND tsd.groupMember = ?
+        `;
+        const [innerCircleCountResult] = await conn.query(innerCircleQuery, [userId,userId]);
+        const innerCircleCount = Number(innerCircleCountResult?.count || 0);
+        console.log('bababab',innerCircleCount);
 
-        await conn.commit();
+        // Query for 'decision_circle' shared decisions count (excluding current user and excluding decisions shared by the current user)
+        const decisionCircleQuery = `
+            SELECT COUNT(DISTINCT tsd.id) AS count
+            FROM techcoach_lite.techcoach_shared_decisions tsd
+            JOIN techcoach_lite.techcoach_decision td ON tsd.decisionId = td.decision_id
+            JOIN techcoach_lite.techcoach_groups tg ON tsd.groupId = tg.id
+            JOIN techcoach_lite.techcoach_users tu ON td.user_id = tu.user_id
+            JOIN techcoach_lite.techcoach_group_members tgm ON tsd.groupId = tgm.group_id
+            JOIN techcoach_lite.techcoach_users tmu ON tgm.member_id = tmu.user_id
+            WHERE tgm.member_id = ?
+            AND tg.type_of_group = 'decision_circle'
+            AND tu.user_id != ?
+        `;
 
-        // Convert BigInt to a regular Number
-        const decisionCount = Number(sharedDecisionsCount.count || 0);
 
+        // Convert results to numbers
+        const [decisionCircleCountResult] = await conn.query(decisionCircleQuery, [userId,userId]);
+        const decisionCircleCount = Number(decisionCircleCountResult?.count || 0);
+        console.log('aabba',decisionCircleCount);
+
+        const decisionCount = innerCircleCount + decisionCircleCount;
+
+        // If no decisions are shared with the user
         if (decisionCount === 0) {
-            res.status(200).json({ message: 'No decisions fetched', decisionCount });
-        } else {
-            res.status(200).json({ message: 'Shared Notification Count Fetched Successfully', decisionCount });
+            return res.status(200).json({ message: 'No decisions fetched', decisionCount });
         }
+
+        // Return the count of shared decisions
+        return res.status(200).json({ message: 'Shared Notification Count Fetched Successfully', decisionCount });
+
     } catch (error) {
         console.error('Error fetching Shared Notification Count:', error);
         if (conn) await conn.rollback();
@@ -697,121 +760,6 @@ const getSharedwithDecisionsCount = async (req, res) => {
         if (conn) conn.release();
     }
 };
-
-// // getting both circle decisions
-// const getSharedDecisionDetails = async (req, res) => {
-//     const userId = req.user.id;
-//     let conn;
-
-//     const decryptText = (text, key) => {
-//         try {
-//             const decipher = crypto.createDecipher('aes-256-cbc', key);
-//             let decryptedText = decipher.update(text, 'hex', 'utf8');
-//             decryptedText += decipher.final('utf8');
-//             return decryptedText;
-//         } catch (error) {
-//             console.error('Error decrypting text:', error);
-//             return null;
-//         }
-//     };
-
-//     const encryptText = (text, key) => {
-//         try {
-//             const cipher = crypto.createCipher('aes-256-cbc', key);
-//             let encryptedText = cipher.update(text, 'utf8', 'hex');
-//             encryptedText += cipher.final('hex');
-//             return encryptedText;
-//         } catch (error) {
-//             console.error('Error encrypting text:', error);
-//             return null;
-//         }
-//     };
-
-    
-//     try {
-//         conn = await getConnection();
-
-//         const decisionQuery = `
-//             SELECT 
-//                 tsd.decisionId AS decision_id,
-//                 td.decision_name,
-//                 td.user_statement,
-//                 td.decision_taken_date,
-//                 td.decision_due_date,
-//                 tg.group_name,
-//                 tg.type_of_group,
-//                 tu.displayname AS shared_by,
-//                 tu.email AS shared_by_email
-//             FROM techcoach_lite.techcoach_shared_decisions tsd
-//             JOIN techcoach_lite.techcoach_decision td ON tsd.decisionId = td.decision_id
-//             JOIN techcoach_lite.techcoach_groups tg ON tsd.groupId = tg.id
-//             JOIN techcoach_lite.techcoach_users tu ON td.user_id = tu.user_id
-//             WHERE tg.created_by = ?
-//         `;
-
-//         const sharedDecisions = await conn.query(decisionQuery, [userId]);
-
-//         console.log('shareddecii',sharedDecisions);
-
-//         if (!Array.isArray(sharedDecisions)) {
-//             res.status(500).json({ error: 'Unexpected data format: sharedDecisions is not an array' });
-//             return;
-//         }
-
-//         if (sharedDecisions.length === 0) {
-//             res.status(200).json({ message: 'No shared decisions found', decisionCount: 0 });
-//             return;
-//         }
-
-//         const decisionIds = sharedDecisions.map(sd => sd.decision_id);
-//         for (const decision of sharedDecisions) {
-
-//             const { decision_id, shared_by, shared_by_email, decision_name, user_statement } = decision;
-
-//             const keyData = undefined +`key-${shared_by}-${shared_by_email}`;
-//             const encryptedKey = encryptText(keyData, process.env.PUBLIC_KEY);
-
-//             decision.decision_name = decryptText(decision.decision_name, encryptedKey) || decision_name;
-//             decision.user_statement = decryptText(decision.user_statement, encryptedKey) || user_statement;
-
-//             const decisionReasonQuery = `
-//             SELECT decision_reason_text 
-//             FROM techcoach_lite.techcoach_decision_reason 
-//             WHERE decision_id = ?`;
-
-//         const decisionReasons = await conn.query(decisionReasonQuery, [decision_id]);
-
-//         decision.reasons = decisionReasons.map(reason =>
-//             decryptText(reason.decision_reason_text, encryptedKey)
-//         );
-//         };
-
-//         const decisionTags = await conn.query(
-//             `SELECT dt.decision_id, t.tag_name, t.tag_type 
-//              FROM techcoach_lite.techcoach_decision_tag_linked_info dt
-//              JOIN techcoach_lite.techcoach_tag_info t ON dt.tag_id = t.id
-//              WHERE dt.decision_id IN (?)`,
-//             [decisionIds]
-//         );
-
-//         sharedDecisions.forEach(decision => {
-//             decision.tags = decisionTags
-//                 .filter(tag => tag.decision_id === decision.decision_id)
-//                 .map(tag => ({ tag_name: tag.tag_name, tag_type: tag.tag_type }));
-//         });
-
-//         res.status(200).json({
-//             message: 'Shared decisions fetched successfully',
-//             results: sharedDecisions,
-//             decisionCount: sharedDecisions.length,
-//         });
-//     } catch (error) {
-//         console.error('Error in getSharedDecisionDetails:', error.message);
-//         res.status(500).json({ error: 'An error occurred while fetching shared decisions' });
-//     } finally {
-//         if (conn) conn.release();
-//     }
-// };
 
 
 const postCommentForDecision = async (req, res) => {
@@ -1094,7 +1042,7 @@ const innerCirclePostComment = async (req, res) => {
         };
 
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
-        const zeptoMailApiKey = 'PHtE6r1cReDp2m599RcG4aC8H5L3M45/+ONleQcSttwWWfEGSU1UrN8swDDjr08uV/cTE6OSzNpv5++e4e2ALWvqY2pIVGqyqK3sx/VYSPOZsbq6x00ZslQcfkbeUYHsd9Zs0ifRu92X';
+        const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
         await axios.post(zeptoMailApiUrl, emailPayload, {
             headers: {
@@ -1194,7 +1142,7 @@ const innerCircleDecisionShare = async (req, res) => {
         };
 
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
-        const zeptoMailApiKey = 'PHtE6r1cReDp2m599RcG4aC8H5L3M45/+ONleQcSttwWWfEGSU1UrN8swDDjr08uV/cTE6OSzNpv5++e4e2ALWvqY2pIVGqyqK3sx/VYSPOZsbq6x00ZslQcfkbeUYHsd9Zs0ifRu92X';
+        const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
         await axios.post(zeptoMailApiUrl, emailPayload, {
             headers: {
@@ -1306,7 +1254,7 @@ const innerCirclePostReply = async (req, res) => {
         // Log email payload before sending
         // console.log("Email payload:", JSON.stringify(emailPayload, null, 2));
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
-        const zeptoMailApiKey = 'PHtE6r1cReDp2m599RcG4aC8H5L3M45/+ONleQcSttwWWfEGSU1UrN8swDDjr08uV/cTE6OSzNpv5++e4e2ALWvqY2pIVGqyqK3sx/VYSPOZsbq6x00ZslQcfkbeUYHsd9Zs0ifRu92X';
+        const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
         // Send the email using ZeptoMail
         await axios.post(zeptoMailApiUrl, emailPayload, {
@@ -1370,7 +1318,7 @@ const innerCircleInvitation = async (req, res) => {
         };
 
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
-        const zeptoMailApiKey = 'PHtE6r1cReDp2m599RcG4aC8H5L3M45/+ONleQcSttwWWfEGSU1UrN8swDDjr08uV/cTE6OSzNpv5++e4e2ALWvqY2pIVGqyqK3sx/VYSPOZsbq6x00ZslQcfkbeUYHsd9Zs0ifRu92X';
+        const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
         await axios.post(zeptoMailApiUrl, emailPayload, {
             headers: {
@@ -1438,7 +1386,7 @@ const innerCircleAddInvitation = async (req, res) => {
         };
 
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
-        const zeptoMailApiKey = 'PHtE6r1cReDp2m599RcG4aC8H5L3M45/+ONleQcSttwWWfEGSU1UrN8swDDjr08uV/cTE6OSzNpv5++e4e2ALWvqY2pIVGqyqK3sx/VYSPOZsbq6x00ZslQcfkbeUYHsd9Zs0ifRu92X';
+        const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
         await axios.post(zeptoMailApiUrl, emailPayload, {
             headers: {
@@ -1571,24 +1519,74 @@ const getSharedDecisionDetails = async (req, res) => {
     }
 };
 
+// const getSharedByDecisionsCount = async (req, res) => {
+//     const userId = req.user.id;
+//     let conn;
+//     try {
+//         conn = await getConnection();
+
+//         // No need for transactions here since we're doing a read-only query
+//         const [SharedByDecisionsCount] = await conn.query(`
+//             SELECT COUNT(DISTINCT tsd.id) AS count
+//             FROM techcoach_lite.techcoach_shared_decisions tsd
+//             JOIN techcoach_lite.techcoach_groups tg
+//                 ON tsd.groupId = tg.id
+//             WHERE tg.created_by = ? 
+//         `, [userId]);
+
+//         const decisionCount = Number(SharedByDecisionsCount.count);
+
+//         // If no decisions are shared by the user
+//         if (decisionCount === 0) {
+//             return res.status(200).json({ message: 'No decisions fetched', decisionCount });
+//         }
+
+//         // Return the count of shared decisions
+//         return res.status(200).json({ message: 'Shared Notification Count Fetched Successfully', decisionCount });
+
+//     } catch (error) {
+//         console.error('Error fetching shared Notification Count:', error);
+//         res.status(500).json({ error: 'An error occurred while processing your request' });
+//     } finally {
+//         if (conn) conn.release();
+//     }
+// }
+
+
 const getSharedByDecisionsCount = async (req, res) => {
     const userId = req.user.id;
     let conn;
     try {
         conn = await getConnection();
 
-        // No need for transactions here since we're doing a read-only query
-        const [SharedByDecisionsCount] = await conn.query(`
+        // Query for 'inner_circle'
+        const innerCircleQuery = `
             SELECT COUNT(DISTINCT tsd.id) AS count
             FROM techcoach_lite.techcoach_shared_decisions tsd
-            JOIN techcoach_lite.techcoach_groups tg
-                ON tsd.groupId = tg.id
-            WHERE tg.created_by = ? 
-        `, [userId]);
+            JOIN techcoach_lite.techcoach_groups tg ON tsd.groupId = tg.id
+            WHERE tg.created_by = ? AND tg.type_of_group = 'inner_circle';
+        `;
+        const [innerCircleCountResult] = await conn.query(innerCircleQuery, [userId]);
+        const innerCircleCount = Number(innerCircleCountResult?.count || 0);
 
-        const decisionCount = Number(SharedByDecisionsCount.count);
+        // Query for 'decision_circle'
+        const decisionCircleQuery = `
+            SELECT COUNT(DISTINCT tsd.id) AS count
+            FROM techcoach_lite.techcoach_shared_decisions tsd
+            JOIN techcoach_lite.techcoach_decision td ON tsd.decisionId = td.decision_id
+            JOIN techcoach_lite.techcoach_groups tg ON tsd.groupId = tg.id
+            JOIN techcoach_lite.techcoach_users tu ON td.user_id = tu.user_id
+            JOIN techcoach_lite.techcoach_group_members tgm ON tsd.groupId = tgm.group_id
+            JOIN techcoach_lite.techcoach_users tmu ON tgm.member_id = tmu.user_id
+            WHERE tu.user_id = ? AND tg.type_of_group = 'decision_circle';
+        `;
+        const [decisionCircleCountResult] = await conn.query(decisionCircleQuery, [userId]);
+        const decisionCircleCount = Number(decisionCircleCountResult?.count || 0);
 
-        // If no decisions are shared by the user
+        // Calculate total shared decisions count
+        const decisionCount = innerCircleCount + decisionCircleCount;
+
+        // Handle case where no shared decisions are found
         if (decisionCount === 0) {
             return res.status(200).json({ message: 'No decisions fetched', decisionCount });
         }
@@ -1602,8 +1600,7 @@ const getSharedByDecisionsCount = async (req, res) => {
     } finally {
         if (conn) conn.release();
     }
-}
-
+};
 
 
 module.exports = {
