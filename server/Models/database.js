@@ -14,12 +14,12 @@ const pool = mariadb.createPool({
 async function getConnection(querys) {
     const connection =  pool.getConnection();
     try {
+        console.log('Connected to MariaDB');
         console.log(
             pool.activeConnections(),
             pool.idleConnections(),
             pool.totalConnections()
           );
-        console.log('Connected to MariaDB');
         return connection;
     }catch (error) {
     if (connection) connection.end()

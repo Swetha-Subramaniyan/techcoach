@@ -14,7 +14,6 @@ const postSkillLink = async (req, res) => {
         await conn.beginTransaction();
 
         const userId = req.user.id;
-        console.log('User ID from:', userId);
 
         let finalSkillIds = skill_ids || [];
 
@@ -68,8 +67,6 @@ const postProfileLink = async (req, res) => {
         await conn.beginTransaction();
 
         const userId = req.user.id;
-        console.log('User ID from:', userId);
-
         // Validate the single decision_id
         const decisionRows = await conn.query("SELECT * FROM techcoach_lite.techcoach_decision WHERE decision_id = ?", [decision_id]);
         if (decisionRows.length === 0) {
@@ -101,7 +98,6 @@ const postProfileLink = async (req, res) => {
             );
         }
 
-        console.log('v_ids:', vIds);
         await conn.commit();
         res.status(200).json({ message: 'Records inserted successfully' });
     } catch (err) {
@@ -245,7 +241,6 @@ const deleteProfileLink = async (req,res) => {
     await conn.beginTransaction();
 
      const userId = req.user.id;
-     console.log('Deleting decision link for user:',userId);
 
      const result = await conn.query(
         "DELETE FROM techcoach_lite.techcoach_decision_swot_linked_info WHERE decision_id = ?",
@@ -274,7 +269,6 @@ const deleteSkillLink = async (req,res) => {
     await conn.beginTransaction();
 
      const userId = req.user.id;
-     console.log('Deleting decision link for user:',userId);
 
      const result = await conn.query(
         "DELETE FROM techcoach_lite.techcoach_decision_skill_linked_info WHERE decision_id = ?",

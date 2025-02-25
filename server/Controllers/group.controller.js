@@ -122,8 +122,6 @@ const getInnerCircleDetails = async (req, res) => {
 
         const [groupResult] = await conn.query(groupQuery, [userId]);
 
-        console.log("Group Result", groupResult);
-
         if (groupResult === undefined) {
             return res.status(200).json({ error: 'No groups found for this user' });
         }
@@ -138,7 +136,6 @@ const getInnerCircleDetails = async (req, res) => {
 
         const groupMemberResult = await conn.query(groupMemberQuery, [groupId]);
 
-        console.log("Group Member Result", groupMemberResult);
 
         if (groupMemberResult.length === 0) {
             return res.status(200).json({ group: groupResult, error: 'No members found for this group' });
@@ -162,7 +159,6 @@ const getInnerCircleDetails = async (req, res) => {
 
         const memberDetailsResult = (await Promise.all(memberDetailsPromises)).filter(Boolean);
 
-        console.log("Member Details Result", memberDetailsResult);
 
         await conn.commit();
         res.status(200).json({ group: groupResult, members: memberDetailsResult });
@@ -190,7 +186,6 @@ const removeMemberFromInner = async (req, res) => {
         conn = await getConnection();
         await conn.beginTransaction();
 
-        console.log("request from remove", req.body);
 
         const query = `
             DELETE FROM techcoach_lite.techcoach_group_members
@@ -198,7 +193,6 @@ const removeMemberFromInner = async (req, res) => {
         `;
         const result = await conn.query(query, [userId, group_id]);
 
-        console.log("result from delete query", result);
 
         await conn.commit();
         res.status(200).json({ message: 'Member removed successfully' });
@@ -243,7 +237,6 @@ const getAddMemberNameList = async (req, res) => {
 
         const result = await conn.query(query, queryParams);
 
-        console.log("Resulssssssssssst:", result);
 
         await conn.commit();
         res.status(200).json({ message: 'Members fetched successfully', result });
@@ -325,8 +318,6 @@ const getSharedMembers = async (req, res) => {
 
         await conn.commit();
 
-        console.log("result from fetched members", result);
-
         res.status(200).json({ message: 'Shared Members Fetched Successfully', result });
     } catch (error) {
         console.error('Error fetching shared members:', error);
@@ -358,7 +349,6 @@ const getInnerCircleAcceptNotification = async (req, res) => {
         if (notAcceptedMembersResult.length > 0) {
             const groupIds = notAcceptedMembersResult.map(member => member.group_id);
 
-            console.log("kkkkkkkkkkkkkk", groupIds);
 
             const acceptedMembersQuery = `
                 SELECT *
@@ -368,14 +358,11 @@ const getInnerCircleAcceptNotification = async (req, res) => {
 
             const acceptedMembersResult = await conn.query(acceptedMembersQuery, [groupIds]);
 
-            console.log("Accepted Members:", acceptedMembersResult);
 
             const groupDetailsMap = {};
 
             for (const member of notAcceptedMembersResult) {
                 const groupId = member.group_id;
-
-                console.log("iddddddddddddd", groupId);
 
                 const groupQuery = `
                     SELECT created_by
@@ -386,8 +373,6 @@ const getInnerCircleAcceptNotification = async (req, res) => {
 
                 if (groupResult.length > 0) {
                     const createdBy = groupResult[0].created_by;
-
-                    console.log("ssssssssss", createdBy);
 
                     const userQuery = `
                         SELECT *
@@ -414,14 +399,10 @@ const getInnerCircleAcceptNotification = async (req, res) => {
                 `;
                 const userResult = await conn.query(userQuery, [createdBy]);
 
-                console.log("Accepted Members Details:", userResult);
-
                 acceptedDetailsMap[member.group_id] = {
                     userDetails: userResult.length > 0 ? userResult[0] : null
                 };
             }
-
-            console.log("Group Details Map:", groupDetailsMap);
 
             await conn.commit();
 
@@ -720,7 +701,6 @@ const getSharedwithDecisionsCount = async (req, res) => {
         `;
         const [innerCircleCountResult] = await conn.query(innerCircleQuery, [userId,userId]);
         const innerCircleCount = Number(innerCircleCountResult?.count || 0);
-        console.log('bababab',innerCircleCount);
 
         // Query for 'decision_circle' shared decisions count (excluding current user and excluding decisions shared by the current user)
         const decisionCircleQuery = `
@@ -740,7 +720,6 @@ const getSharedwithDecisionsCount = async (req, res) => {
         // Convert results to numbers
         const [decisionCircleCountResult] = await conn.query(decisionCircleQuery, [userId,userId]);
         const decisionCircleCount = Number(decisionCircleCountResult?.count || 0);
-        console.log('aabba',decisionCircleCount);
 
         const decisionCount = innerCircleCount + decisionCircleCount;
 
@@ -779,7 +758,6 @@ const postCommentForDecision = async (req, res) => {
             [groupId, groupMemberID, commentText, decisionId]
         );
 
-        console.log("Inserted comment ID", updateCommentResult.insertId);
 
         await conn.commit();
 
@@ -832,8 +810,6 @@ const getComments = async (req, res) => {
             type_of_user: comment.groupMember === userId ? 'author' : 'member'
         }));
 
-        console.log("comments", updatedComments);
-
         res.status(200).json({ comments: updatedComments });
     } catch (error) {
         console.error('Error fetching comments:', error);
@@ -876,7 +852,6 @@ const getSharedComments = async (req, res) => {
 
         const comments = await conn.query(commentsQuery, [decisionId]);
 
-        console.log("comments", comments);
 
         comments.forEach(comment => {
             if (comment.groupMember === userId) {
@@ -905,16 +880,12 @@ const removeCommentsAdded = async (req, res) => {
     try {
         conn = await getConnection();
         await conn.beginTransaction();
-
-        console.log("request from remove", req.body);
-
         const query = `
             DELETE FROM techcoach_lite.techcoach_conversations
             WHERE id=?
         `;
         const result = await conn.query(query, [commentId]);
 
-        console.log("result from delete query", result);
 
         await conn.commit();
         res.status(200).json({ message: 'Comment removed successfully' });
@@ -928,7 +899,6 @@ const removeCommentsAdded = async (req, res) => {
 
 
 const postReplyComment = async (req, res) => {
-    console.log("request body from post reply", req.body);
     const { commentId, reply, groupId, decisionId } = req.body;
 
     const userId = req.user.id;
@@ -943,9 +913,6 @@ const postReplyComment = async (req, res) => {
              VALUES (?, ?, ?, NOW(),?, ?)`,
             [groupId, userId, reply, commentId, decisionId]
         );
-
-        console.log("putttttttttttttt", query);
-
         await conn.commit();
         res.status(200).json({ message: 'Shared Decision Fetched successfully' });
     } catch (error) {
@@ -991,7 +958,6 @@ const innerCirclePostComment = async (req, res) => {
     // console.log("Request body:", req.body.decision);
 
     const { decision, groupMemberID, commentText, email } = req.body;
-    console.log('reqqq', req.body);
 
     let conn;
 
@@ -1009,7 +975,6 @@ const innerCirclePostComment = async (req, res) => {
         const groupMemberQuery = 'SELECT * FROM techcoach_lite.techcoach_users WHERE user_id = ?';
         const groupMemberRows = await conn.query(groupMemberQuery, [groupMemberID]);
         const groupMemberDetails = groupMemberRows[0];
-        console.log("Group member details:", groupMemberDetails);
 
         const { decision_name, decision_due_date, creation_date } = decision;
 
@@ -1064,12 +1029,9 @@ const innerCirclePostComment = async (req, res) => {
 
 
 const innerCircleDecisionShare = async (req, res) => {
-    console.log("Request body invitation:", req.body);
 
     const { memberEmail, decisionSummary } = req.body;
     const memberId = req.user.id;
-
-    console.log("Request body invitation iddd", memberId);
 
     let conn;
 
@@ -1086,8 +1048,6 @@ const innerCircleDecisionShare = async (req, res) => {
 
         const memberNameQuery = 'SELECT * FROM techcoach_lite.techcoach_users WHERE email = ?';
         const rows = await conn.query(memberNameQuery, [memberEmail]);
-
-        console.log("ssssssssssss", rows)
 
         if (!rows || rows.length === 0) {
             throw new Error('Member not found');
@@ -1108,8 +1068,6 @@ const innerCircleDecisionShare = async (req, res) => {
         const subjectName = subjectNameRows[0].displayname;
 
         const truncatedDecisionText = truncateText(decisionSummary.decisionName, 20);
-
-        console.log("maillllllll", truncatedDecisionText, subjectName, memberEmail, memberName, decisionSummary)
 
         const emailPayload = {
             from: {
@@ -1164,32 +1122,22 @@ const innerCircleDecisionShare = async (req, res) => {
 
 
 const innerCirclePostReply = async (req, res) => {
-    console.log("Full request body from post reply:", JSON.stringify(req.body, null, 2));
 
     let commentId, reply, groupId, decisionId;
 
     if (typeof req.body.commentId === 'object') {
-        // Nested structure
         commentId = req.body.commentId.commentId;
         reply = req.body.commentId.replyText;
         decisionId = req.body.commentId.id;
         groupId = req.body.groupId ?? req.body.commentId.groupId;
 
     } else {
-        // Flat structure
         commentId = req.body.commentId;
         reply = req.body.reply;
         groupId = req.body.groupId;
         decisionId = req.body.decisionId;
     }
 
-    // Log extracted values for troubleshooting
-    console.log("Extracted commentId:", commentId);
-    console.log("Extracted groupId:", groupId);
-    console.log("Extracted reply:", reply);
-    console.log("Extracted decisionId:", decisionId);
-
-    // Validate required fields
     if (!commentId || !groupId || !reply || !decisionId) {
         console.error("Missing required fields in request body");
         return res.status(400).json({ error: 'Missing required fields', details: { commentId, groupId, reply, decisionId } });
@@ -1217,7 +1165,6 @@ const innerCirclePostReply = async (req, res) => {
         console.log("Database insert result:", query);
 
         await conn.commit();
-        // Queries adjusted to handle array structure
         const decision = (await conn.query(`SELECT decision_name, creation_date, decision_due_date, user_id FROM techcoach_lite.techcoach_decision WHERE decision_id = ?`, [decisionId]))[0];
         const groupMemberDetails = (await conn.query(`SELECT displayname FROM techcoach_lite.techcoach_users WHERE user_id = ?`, [userId]))[0];
         const originalCommentPoster = (await conn.query(`SELECT email, displayname FROM techcoach_lite.techcoach_users 
@@ -1225,12 +1172,10 @@ const innerCirclePostReply = async (req, res) => {
             ON techcoach_users.user_id = techcoach_conversations.groupMember 
             WHERE techcoach_conversations.id = ?`, [commentId]))[0];
 
-        // Log data for debugging
         console.log("Decision data:", decision);
         console.log("Group Member Details:", groupMemberDetails);
         console.log("Decision Owner:", originalCommentPoster);
 
-        // Proceed to set up the email payload if data is valid
         const truncatedReplyText = truncateText(reply, 20);
         const htmlBody = `
                           <div style="font-family: Arial, sans-serif; color: #333;">
@@ -1251,12 +1196,9 @@ const innerCirclePostReply = async (req, res) => {
             htmlbody: htmlBody
         };
 
-        // Log email payload before sending
-        // console.log("Email payload:", JSON.stringify(emailPayload, null, 2));
         const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
         const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
 
-        // Send the email using ZeptoMail
         await axios.post(zeptoMailApiUrl, emailPayload, {
             headers: {
                 'Content-Type': 'application/json',
@@ -1291,7 +1233,6 @@ const innerCircleInvitation = async (req, res) => {
         const groupMemberQuery = 'SELECT * FROM techcoach_lite.techcoach_users WHERE email = ?';
         const groupMemberRows = await conn.query(groupMemberQuery, [senderEmail]);
         const groupMemberDetails = groupMemberRows[0];
-        console.log("Group member details:", groupMemberDetails);
 
         const emailPayload = {
             from: {
@@ -1354,7 +1295,6 @@ const innerCircleAddInvitation = async (req, res) => {
         const groupMemberQuery = 'SELECT * FROM techcoach_lite.techcoach_users WHERE email = ?';
         const groupMemberRows = await conn.query(groupMemberQuery, [senderEmail]);
         const groupMemberDetails = groupMemberRows[0];
-        console.log("Group member details:", groupMemberDetails);
 
         const emailPayload = {
             from: {

@@ -229,8 +229,6 @@ const replyToComment = async (req, res) => {
     const userId = req.user.id;
     let conn;
 
-    console.log('Request bodyy:',req.body);
-    console.log('decision Id:',decisionId);
     try {
         conn = await getConnection();
         await conn.beginTransaction();
@@ -238,14 +236,14 @@ const replyToComment = async (req, res) => {
         // Check if the parent comment exists
         const parentComment = await conn.query('SELECT id FROM techcoach_lite.techcoach_conversations WHERE id = ?', [parentCommentId]);
         if (parentComment.length === 0) {
-            console.log("Invalid parentCommentId:", parentCommentId);
+            //console.log("Invalid parentCommentId:", parentCommentId);
             return res.status(400).json({ message: 'Invalid parent comment ID, comment does not exist' });
         }
 
         // Check if the group exists
         const group = await conn.query('SELECT id FROM techcoach_lite.techcoach_groups WHERE id = ?', [groupId]);
         if (group.length === 0) {
-            console.log("Invalid groupId:", groupId);
+            //console.log("Invalid groupId:", groupId);
             return res.status(400).json({ message: 'Invalid group_id, group does not exist' });
         }
 
@@ -337,7 +335,7 @@ const postShareWithComment = async (req, res) => {
             [groupId, memberId]
         );
         if (member.length === 0) {
-            console.log(`User ${memberId} is not a member of group ${groupId}`);
+            //console.log(`User ${memberId} is not a member of group ${groupId}`);
             return res.status(403).json({
                 message: 'You are not authorized to post comments in this group',
             });
@@ -511,7 +509,7 @@ const postdecisionGroup = async (req, res) => {
             [created_by, type_of_group, group_name]
         );
 
-        console.log('Group Result:', groupResult);  // Log the result to inspect its structure
+        //console.log('Group Result:', groupResult);  // Log the result to inspect its structure
 
         // Use groupResult.insertId if the result is an object
         const groupId = groupResult.insertId ? groupResult.insertId.toString() : groupResult[0].insertId.toString();

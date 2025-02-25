@@ -88,7 +88,7 @@ function App() {
         <Route path='/profile' element={<Profile />} />
         <Route path='/softskill' element={<SoftSkill />} />
 
-        {/* Profile Routes */}
+        {/* Profile Routes */} 
         <Route path='/profiletab' element={<ProfileTab />} />
         <Route path = '/advancedProfile' element={<AdvancedProfile />} />
         <Route path = '/advancedProfileTable' element={<AdvancedProfileTable />} />

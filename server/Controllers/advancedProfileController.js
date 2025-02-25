@@ -6,7 +6,7 @@ const getUserList = async (req, res) => {
     let conn;
     try {
       const userId = req.user.id;
-      console.log("User ID from getUserList:", userId);
+      //console.log("User ID from getUserList:", userId);
   
       conn = await getConnection();
       await conn.beginTransaction();
@@ -30,7 +30,7 @@ const getUserList = async (req, res) => {
 
 const postAdvancedProfile = async (req, res) => {
     const { goals,values,resolutions,constraints,other_factors } = req.body;
-    console.log(req.body, 'General Profile Data');
+    //console.log(req.body, 'General Profile Data');
   
     let conn;
     try {
@@ -38,10 +38,10 @@ const postAdvancedProfile = async (req, res) => {
       await conn.beginTransaction();
   
       const userId = req.user.id;
-      console.log("User ID from getUserList:", userId);
+      //console.log("User ID from getUserList:", userId);
   
       const currentDate = new Date().toISOString().slice(0, 10);
-      console.log("Current Date:", currentDate);
+      //console.log("Current Date:", currentDate);
   
       const encryptText = (text, key) => {
         try {
@@ -118,7 +118,7 @@ const getMasterProfiles = async (req,res) => {
     try {
       conn = await getConnection();
       const rows = await conn.query("SELECT header_id ,header_name FROM techcoach_lite.techcoach_profile_swot_headers WHERE type_of_profile = 'Advanced_Profile' ");
-      console.log('Fetched master profile:',rows);
+      //console.log('Fetched master profile:',rows);
       if (rows.length > 0) {
         res.status(200).json({profiles : rows })
       } else {
@@ -136,7 +136,6 @@ const getMasterProfiles = async (req,res) => {
 const getAdvancedProfile = async (req, res) => {
     const userId = req.user.id;
     const userKey = req.user.key;
-    console.log(userId);
 
     if (!userId || !userKey) {
         return res.status(400).json({ error: 'User authentication details are missing' });
@@ -211,7 +210,6 @@ const getAdvancedProfile = async (req, res) => {
 const putAdvancedProfile = async (req, res) => {
     const { goals,values,resolutions,constraints,other_factors } = req.body;
     const userKey = req.user.key;
-    console.log(req.body, 'Update General Profile Data');
   
     let conn;
     try {
@@ -220,7 +218,6 @@ const putAdvancedProfile = async (req, res) => {
   
       // Validate User ID:
       const userId = req.user.id;
-      console.log("User ID from getUserList:", userId);
   
       const encryptText = (text, key) => {
         const cipher = crypto.createCipher('aes-256-cbc', key);
@@ -247,7 +244,6 @@ const putAdvancedProfile = async (req, res) => {
   
           const headerId = headerRows[0]?.header_id;
   
-          console.log("header id", headerId);
   
           if (!headerId) {
             throw new Error(`Header ID not found for header name: ${headerName}`);
