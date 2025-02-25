@@ -223,7 +223,7 @@ const Profile = () => {
           <Link to='/profiletab'>
             <button className='profiletab'>Edit Detail</button>
           </Link>
-          <div>
+          <div> 
             <Link to='/profiletab'>
               <FaUserEdit className='iconn' />
             </Link>

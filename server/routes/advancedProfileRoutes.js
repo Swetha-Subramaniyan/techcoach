@@ -5,7 +5,7 @@ const advancedProfileController = require("../Controllers/advancedProfileControl
 
 const authMiddleware = require("../Utility/AuthMiddleware");
 const createUserKey = require("../Utility/CreateUserKey");
-
+ 
 router.use(authMiddleware);
 router.use(createUserKey);
 

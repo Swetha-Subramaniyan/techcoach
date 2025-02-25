@@ -39,10 +39,9 @@ router.get('/auth/google/callback', (req, res, next) => {
                 "sso",
                 user_domain
             );
-            console.log("resssssssss", responseFromGift);
             
             const token = jwt.sign({ id: req.user.id, email: req.user.email }, JWT_SECRET_KEY,{expiresIn: '24h'});
-            // console.log(token)
+            console.log(token)
             res.redirect(`${process.env.CLIENT_URL}/dashboard?token=${token}&user_id=${user.id}`);
 
         });

@@ -9,8 +9,6 @@ const postSkill = async (req, res) => {
     await conn.beginTransaction();
 
     const userId = req.user.id;
-    console.log('User ID:', userId);
-
     // Fetch the skill_id based on the skill_name
     const rows = await conn.query(
       "SELECT skill_id FROM techcoach_lite.techcoach_soft_skill WHERE skill_name = ?",
@@ -209,8 +207,6 @@ const deleteAllSkill = async (req, res) => {
     await conn.beginTransaction();
 
     const userId = req.user.id;
-    console.log('Deleting skill for user:', userId);
-
     // Delete the skill
     const result = await conn.query(
       "DELETE FROM techcoach_lite.techcoach_soft_skill_value WHERE  user_id = ?",
@@ -236,9 +232,6 @@ const deleteSkill = async (req, res) => {
   const userId = req.user.id;
   let conn;
 
-  console.log(`Deleting skill with ID: ${id}`);
-  console.log(`User ID: ${userId}`);
-
   if (!id || !userId) {
     return res.status(400).json({ error: 'Invalid parameters' });
   }
@@ -262,7 +255,6 @@ const deleteSkill = async (req, res) => {
       [userId, id]
     );
 
-    console.log('Delete result:', result);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Skill not found or already deleted' });

@@ -7,7 +7,7 @@ const authMiddleware = require("../Utility/AuthMiddleware.js");
 const createUserKey = require("../Utility/CreateUserKey");
 
 router.use(authMiddleware);
-router.use(createUserKey);
+router.use(createUserKey); 
 
 router.get("/profile", userController.getUserList);
 

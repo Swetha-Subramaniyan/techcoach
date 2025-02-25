@@ -124,7 +124,6 @@ const getInfo = async (req, res) => {
       `, [id]
     );
 
-    console.log("decisionnnnnnnnnn data", decisionData);
     if (!decisionData || decisionData.length === 0) {
       console.error('Decision not found for ID:', id);
       return res.status(404).json({ error: 'Decision not found' });
@@ -544,7 +543,6 @@ const getall = async (req, res) => {
       throw new Error('Missing user parameter in query');
     }
 
-    console.log('User:', user);
 
     const decisionData = await conn.query(
       `SELECT 

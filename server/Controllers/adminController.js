@@ -44,11 +44,11 @@ const getInfo = async (req, res) => {
 
 const getUserType = async(req,res) =>{
   const userId = req.user.id;
-  console.log('userId:',userId);
+  //console.log('userId:',userId);
   try {
     const conn = await getConnection();
     const result = await conn.query('SELECT user_type FROM techcoach_lite.techcoach_users WHERE user_id = ?',[userId]);
-    console.log('user',result)
+    //console.log('user',result)
     if(result.length === 0) {
       return res.status(404).json({message:'User not found'});
     }
@@ -63,7 +63,7 @@ const getUserType = async(req,res) =>{
 
 const getTotalDecisionsCount = async (req, res) => {
   const { id } = req.params; 
-  console.log('User ID:', id);
+  //console.log('User ID:', id);
 
   let conn;
 
@@ -75,7 +75,7 @@ const getTotalDecisionsCount = async (req, res) => {
       [id]
     );
 
-    console.log('Query Result:', rows);
+    //console.log('Query Result:', rows);
 
     if (!rows || rows.length === 0 || rows[0].total_decisions === undefined) {
       return res.status(404).json({ message: 'No decisions found for this user.' });

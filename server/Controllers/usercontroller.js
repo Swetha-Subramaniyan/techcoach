@@ -6,7 +6,6 @@ const getUserList = async (req, res) => {
   let conn;
   try {
     const userId = req.user.id;
-    console.log("User ID from getUserList:", userId);
 
     conn = await getConnection();
     await conn.beginTransaction();
@@ -113,10 +112,8 @@ const getUserList = async (req, res) => {
 //   }
 // };
 
-
 const postGeneralProfile = async (req, res) => {
   const { attitude, strength, weakness, opportunity, threat } = req.body;
-  console.log(req.body, 'General Profile Data');
 
   let conn;
   try {
@@ -124,10 +121,8 @@ const postGeneralProfile = async (req, res) => {
     await conn.beginTransaction();
 
     const userId = req.user.id;
-    console.log("User ID from getUserList:", userId);
 
     const currentDate = new Date().toISOString().slice(0, 10);
-    console.log("Current Date:", currentDate);
 
     const encryptText = (text, key) => {
       const cipher = crypto.createCipher('aes-256-cbc', key);
@@ -152,8 +147,6 @@ const postGeneralProfile = async (req, res) => {
         );
 
         const headerId = headerRows[0]?.header_id;
-
-        console.log("header idddddddd", headerId);
 
         if (!headerId) {
           throw new Error(`Header ID not found for header name: ${headerName}`);
@@ -196,7 +189,7 @@ const getMasterProfiles = async (req,res) => {
   try {
     conn = await getConnection();
     const rows = await conn.query("SELECT header_id ,header_name FROM techcoach_lite.techcoach_profile_swot_headers WHERE type_of_profile = 'Profile' ");
-    console.log('Fetched master profile:',rows);
+    
     if (rows.length > 0) {
       res.status(200).json({profiles : rows })
     } else {
@@ -288,7 +281,6 @@ const decryptText = (encryptedText, key) => {
 const getProfile = async (req, res) => {
   const userId = req.user.id;
   const userKey = req.user.key;
-  console.log(userId);
   let conn;
 
   try {
@@ -476,10 +468,10 @@ const getProfile = async (req, res) => {
 // };
 
 
-const putProfile = async (req, res) => {
+/* const putProfile = async (req, res) => {
+  console.log("reqbdy", req.body)
   const { attitude, strength, weakness, opportunity, threat } = req.body;
   const userKey = req.user.key;
-  console.log(req.body, 'Update General Profile Data');
 
   let conn;
   try {
@@ -488,7 +480,6 @@ const putProfile = async (req, res) => {
 
     // Validate User ID:
     const userId = req.user.id;
-    console.log("User ID from getUserList:", userId);
 
     const encryptText = (text, key) => {
       const cipher = crypto.createCipher('aes-256-cbc', key);
@@ -514,8 +505,6 @@ const putProfile = async (req, res) => {
         );
 
         const headerId = headerRows[0]?.header_id;
-
-        console.log("header id", headerId);
 
         if (!headerId) {
           throw new Error(`Header ID not found for header name: ${headerName}`);
@@ -589,6 +578,103 @@ const putProfile = async (req, res) => {
           );
         }
       }
+    }
+
+    await conn.commit();
+    res.status(200).json({ message: 'General profile data updated successfully' });
+  } catch (error) {
+    console.error('Error updating general profile data:', error);
+    if (conn) {
+      await conn.rollback();
+    }
+    res.status(500).json({ error: 'An error occurred while processing your request' });
+  } finally {
+    if (conn) conn.release();
+  }
+}; */
+
+const putProfile = async (req, res) => {
+  console.log("reqbdy", req.body);
+  const { attitude, strength, weakness, opportunity, threat } = req.body;
+  const userKey = req.user.key;
+  const userId = req.user.id;
+
+  let conn;
+  try {
+    conn = await getConnection();
+    await conn.beginTransaction();
+
+    const encryptText = (text, key) => {
+      const cipher = crypto.createCipher('aes-256-cbc', key);
+      let encryptedText = cipher.update(text, 'utf8', 'hex');
+      encryptedText += cipher.final('hex');
+      return encryptedText;
+    };
+
+    const allValues = [
+      ...attitude.map(item => ({ ...item, headerName: 'attitude' })),
+      ...strength.map(item => ({ ...item, headerName: 'strength' })),
+      ...weakness.map(item => ({ ...item, headerName: 'weakness' })),
+      ...opportunity.map(item => ({ ...item, headerName: 'opportunity' })),
+      ...threat.map(item => ({ ...item, headerName: 'threat' }))
+    ];
+
+    const existingItems = await conn.query(
+      "SELECT id, header_value FROM techcoach_lite.techcoach_profile_swot_values WHERE user_id = ?",
+      [userId]
+    );
+
+    const itemsToUpdate = [];
+    const itemsToInsert = [];
+    const itemsToDelete = new Set(existingItems.map(item => item.id));
+
+    for (const item of allValues) {
+      if (item.id) {
+        const encryptedValue = encryptText(item.value, userKey);
+        itemsToUpdate.push({ id: item.id, value: encryptedValue }); 
+        itemsToDelete.delete(item.id); 
+      } else if (item.id === null) {
+        const headerResult = await conn.query(
+          "SELECT header_id FROM techcoach_lite.techcoach_profile_swot_headers WHERE LOWER(header_name) = LOWER(?)",
+          [item.headerName] 
+        );
+
+        const headerId = headerResult.length > 0 ? headerResult[0].header_id : null;
+
+        const encryptedValue = encryptText(item.value, userKey);
+        itemsToInsert.push({ userId, headerId, value: encryptedValue }); 
+      }
+    }
+
+    console.log("itemstoupdate", itemsToUpdate);
+
+    if (itemsToUpdate.length > 0) {
+      for (const item of itemsToUpdate) {
+        await conn.query(
+          "UPDATE techcoach_lite.techcoach_profile_swot_values SET header_value = ? WHERE id = ?",
+          [item.value, item.id] 
+        );
+      }
+    }
+
+    console.log("itemstoinsert", itemsToInsert);
+
+    if (itemsToInsert.length > 0) {
+      for (const item of itemsToInsert) {
+        await conn.query(
+          "INSERT INTO techcoach_lite.techcoach_profile_swot_values (user_id, header_id, header_value) VALUES (?, ?, ?)",
+          [item.userId, item.headerId, item.value]
+        );
+      }
+    }
+
+    console.log("itemstodelete", itemsToDelete);
+
+    if (itemsToDelete.size > 0) {
+      await conn.query(
+        "DELETE FROM techcoach_lite.techcoach_profile_swot_values WHERE id IN (?)",
+        [[...itemsToDelete]] 
+      );
     }
 
     await conn.commit();

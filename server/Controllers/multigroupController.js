@@ -32,7 +32,6 @@ const getUserList = async (req, res) => {
 
 const decisionCircleCreation = async (req, res) => {
     const { created_by, type_of_group = 'decision_circle', group_name, members } = req.body;
-    console.log('Request data:', { created_by, type_of_group, group_name, members });
   
     let conn;
     
@@ -44,19 +43,16 @@ const decisionCircleCreation = async (req, res) => {
         `SELECT id FROM techcoach_lite.techcoach_groups WHERE group_name = ? AND created_by =?`,
         [group_name,created_by]
       );
-      console.log('Existing group query result:', existingGroup);
   
       let groupId;
       if (existingGroup.length > 0) {
         groupId = existingGroup[0].id;
-        console.log('Group exists, using existing groupId:', groupId);
       } else {
         const groupResult = await conn.query(
           `INSERT INTO techcoach_lite.techcoach_groups (created_by, type_of_group, group_name) VALUES (?, ?, ?)`,
           [created_by, type_of_group, group_name]
         );
         groupId = groupResult.insertId;
-        console.log('Group created, new groupId:', groupId);
       }
   
       if (!groupId) {
@@ -73,7 +69,6 @@ const decisionCircleCreation = async (req, res) => {
   
       await conn.commit();
       res.status(201).json({ message: 'Decision circle created successfully', groupId: groupId.toString() });
-      console.log('Group ID:', groupId);
     } catch (error) {
       console.error('Error creating decision circle:', error);
       if (conn) await conn.rollback();
@@ -85,7 +80,6 @@ const decisionCircleCreation = async (req, res) => {
   
 const getUserDecisionCircles = async (req, res) => {
     const created_by = req.user.id;
-    console.log('Retrieved user_id:', created_by);
 
     let conn;
 
@@ -103,7 +97,6 @@ const getUserDecisionCircles = async (req, res) => {
             [created_by]
         );
 
-        console.log('Query result:', circles);
         res.status(200).json({ decisionCircles: circles });
     } catch (error) {
         console.error('Error fetching user decision circles:', error);
@@ -297,7 +290,6 @@ const getdecisionCirclesByUserAndMember = async (req, res) => {
 const getUsersForGroup = async (req, res) => {
     const { groupId } = req.params;
     let conn;
-    console.log('Group ID', groupId);
 
     try {
         conn = await getConnection();
@@ -447,7 +439,6 @@ const sendDecisionCircleInvitation = async (req, res) => {
         const groupMemberQuery = 'SELECT * FROM techcoach_lite.techcoach_users WHERE email = ?';
         const groupMemberRows = await conn.query(groupMemberQuery, [senderEmail]);
         const groupMemberDetails = groupMemberRows[0];
-        console.log("Group member details:", groupMemberDetails);
 
         const emailPayload = {
             from: {
@@ -516,7 +507,6 @@ const decisionshareDecisionCircle = async (req, res) => {
         // Execute the query
         const result = await conn.query(query, [group_id, decision_id]);
 
-        console.log('Query Result:', result); // Log the result for debugging
 
         // Commit the transaction to save changes
         await conn.commit();
@@ -822,7 +812,6 @@ const getMemberSharedDecisions = async (req, res) => {
             WHERE tg.id = ? AND tg.type_of_group='decision_circle'`;
 
         const getDecisions = await conn.query(decisionQuery, [groupId]);
-        console.log('weee', getDecisions);
 
         if (!Array.isArray(getDecisions) || !getDecisions.length) {
             return res.status(200).json({ message: 'No decisions found', results: [], decisionCount: 0 });
@@ -902,7 +891,6 @@ const getMemberSharedDecisions = async (req, res) => {
 
 const decisionCirclePostComment = async (req, res) => {
     const { decisionId, groupId, comment, email } = req.body;
-    console.log('reqssssss.body', req.body);
     let conn;
 
     const truncateText = (text, maxLength) => {
