@@ -1,84 +1,174 @@
-const getConnection = require('../Models/database');
+// const getConnection = require('../Models/database');
 
+
+// const postComment = async (req, res) => {
+//     const { groupId, commentText, decisionId } = req.body;
+//     const memberId = req.user.id;
+
+//     console.log('Request Body:', req.body);
+//     let conn;
+
+//     try {
+//         conn = await getConnection();
+//         await conn.beginTransaction();
+
+//         // Validate groupId
+//         const group = await conn.query(
+//             'SELECT id FROM techcoach_lite.techcoach_groups WHERE id = ?',
+//             [groupId]
+//         );
+//         if (group.length === 0) {
+//             return res.status(400).json({ message: 'Invalid group_id, group does not exist' });
+//         }
+
+//         // Validate decisionId
+//         const decision = await conn.query(
+//             'SELECT decision_id FROM techcoach_lite.techcoach_decision WHERE decision_id = ?',
+//             [decisionId]
+//         );
+//         if (decision.length === 0) {
+//             return res.status(400).json({ message: 'Invalid decision_id, decision does not exist' });
+//         }
+
+//         // Check if the logged-in user is a member of the group
+//         const member = await conn.query(
+//             'SELECT member_id FROM techcoach_lite.techcoach_group_members WHERE group_id = ? AND member_id = ?',
+//             [groupId, memberId]
+//         );
+//         if (member.length === 0) {
+//             return res.status(403).json({
+//                 message: 'You are not authorized to post comments in this group',
+//             });
+//         }
+
+//         // Insert comment for the logged-in user
+//         await conn.query(
+//             `
+//             INSERT INTO techcoach_lite.techcoach_conversations 
+//             (groupId, groupMember, comment, decisionId, created_at)
+//             VALUES (?, ?, ?, ?, NOW());
+//             `,
+//             [groupId, memberId, commentText, decisionId]
+//         );
+
+//         // Commit transaction
+//         await conn.commit();
+
+//         // Return success response
+//         res.status(201).json({
+//             message: 'Comment added successfully!',
+//             comment: {
+//                 groupId,
+//                 memberId,
+//                 comment: commentText,
+//                 decisionId,
+//             },
+//         });
+//     } catch (error) {
+//         if (conn) {
+//             await conn.rollback();
+//         }
+//         console.error('Error adding comment:', error.message);
+//         res.status(500).json({
+//             message: 'Server error while adding comment',
+//             error: error.message,
+//         });
+//     } finally {
+//         if (conn) {
+//             conn.release();
+//         }
+//     }
+// };
+
+
+
+const getConnection = require('../Models/database');
 
 const postComment = async (req, res) => {
     const { groupId, commentText, decisionId } = req.body;
     const memberId = req.user.id;
 
-    // console.log('Request Body:', req.body);
-    let conn;
+    console.log('Request Body:', req.body);
 
     try {
-        conn = await getConnection();
-        await conn.beginTransaction();
+        await getConnection(async (conn) => {
+            await conn.beginTransaction();
 
-        // Validate groupId
-        const group = await conn.query(
-            'SELECT id FROM techcoach_lite.techcoach_groups WHERE id = ?',
-            [groupId]
-        );
-        if (group.length === 0) {
-            return res.status(400).json({ message: 'Invalid group_id, group does not exist' });
-        }
+            // Validate groupId
+            const group = await conn.query(
+                'SELECT id FROM techcoach_lite.techcoach_groups WHERE id = ?',
+                [groupId]
+            );
+            if (group.length === 0) {
+                res.status(400).json({ message: 'Invalid group_id, group does not exist' });
+                return;
+            }
 
-        // Validate decisionId
-        const decision = await conn.query(
-            'SELECT decision_id FROM techcoach_lite.techcoach_decision WHERE decision_id = ?',
-            [decisionId]
-        );
-        if (decision.length === 0) {
-            return res.status(400).json({ message: 'Invalid decision_id, decision does not exist' });
-        }
+            // Validate decisionId
+            const decision = await conn.query(
+                'SELECT decision_id FROM techcoach_lite.techcoach_decision WHERE decision_id = ?',
+                [decisionId]
+            );
+            if (decision.length === 0) {
+                res.status(400).json({ message: 'Invalid decision_id, decision does not exist' });
+                return;
+            }
 
-        // Check if the logged-in user is a member of the group
-        const member = await conn.query(
-            'SELECT member_id FROM techcoach_lite.techcoach_group_members WHERE group_id = ? AND member_id = ?',
-            [groupId, memberId]
-        );
-        if (member.length === 0) {
-            return res.status(403).json({
-                message: 'You are not authorized to post comments in this group',
+            // Check group membership
+            const member = await conn.query(
+                'SELECT member_id FROM techcoach_lite.techcoach_group_members WHERE group_id = ? AND member_id = ?',
+                [groupId, memberId]
+            );
+            if (member.length === 0) {
+                res.status(403).json({
+                    message: 'You are not authorized to post comments in this group',
+                });
+                return;
+            }
+
+            // Insert the comment
+            await conn.query(
+                `INSERT INTO techcoach_lite.techcoach_conversations 
+                 (groupId, groupMember, comment, decisionId, created_at)
+                 VALUES (?, ?, ?, ?, NOW());`,
+                [groupId, memberId, commentText, decisionId]
+            );
+
+            await conn.commit();
+
+            res.status(201).json({
+                message: 'Comment added successfully!',
+                comment: {
+                    groupId,
+                    memberId,
+                    comment: commentText,
+                    decisionId,
+                },
             });
-        }
-
-        // Insert comment for the logged-in user
-        await conn.query(
-            `
-            INSERT INTO techcoach_lite.techcoach_conversations 
-            (groupId, groupMember, comment, decisionId, created_at)
-            VALUES (?, ?, ?, ?, NOW());
-            `,
-            [groupId, memberId, commentText, decisionId]
-        );
-
-        // Commit transaction
-        await conn.commit();
-
-        // Return success response
+        });
         res.status(201).json({
             message: 'Comment added successfully!',
-            comment: {
-                groupId,
-                memberId,
-                comment: commentText,
-                decisionId,
-            },
+            // comment: {
+            //     groupId,
+            //     memberId,
+            //     comment: commentText,   
+            //     decisionId,
+            // },   
         });
     } catch (error) {
-        if (conn) {
-            await conn.rollback();
-        }
         console.error('Error adding comment:', error.message);
-        res.status(500).json({
+        return res.status(500).json({
             message: 'Server error while adding comment',
             error: error.message,
         });
-    } finally {
-        if (conn) {
-            conn.release();
-        }
     }
+    finally {
+                if (conn) {
+                    conn.release();
+                 }
+            }
 };
+
 
 const getComments = async (req, res) => {
     const { groupId, decisionId } = req.params;
@@ -554,9 +644,11 @@ const getAlldecisionGroup = async (req, res) => {
             await conn.rollback();
         }
         res.status(500).json({ error: 'An error occurred while fetching decision groups' });
-    } finally {
-        if (conn) conn.release();
+} finally {
+    if (conn) {
+        conn.release();
     }
+}
 };
 
 const getDecisionGroup = async (req, res) => {
@@ -585,7 +677,9 @@ const getDecisionGroup = async (req, res) => {
         }
         res.status(500).json({ error: 'An error occurred while fetching the decision group' });
     } finally {
-        if (conn) conn.release();
+        if (conn) {
+            conn.release();
+        }
     }
 };
 
@@ -623,7 +717,9 @@ const putDecisionGroup = async (req, res) => {
         await conn.rollback();
         res.status(500).json({ error: 'An error occurred while updating the decision group' });
     } finally {
-        if (conn) conn.release();
+        if (conn) {
+            conn.release();
+        }
     }
 };
 
@@ -658,7 +754,9 @@ const deleteDecisionGroup = async (req, res) => {
         }
         res.status(500).json({ error: 'An error occurred while deleting the decision group' });
     } finally {
-        if (conn) conn.release();
+        if (conn) {
+            conn.release();
+        }
     }
 };
 
@@ -666,21 +764,6 @@ const deleteDecisionGroup = async (req, res) => {
 
 module.exports = {
     // Conversation Controllers
-    postComment,
-    getComments,
-    getDecisionComments,
-    updateComment,
-    replyToComment,
-    deleteComment,
-    postShareWithComment,
-    getWithComments,
-    editComments,
-
-
-    // groupNames controller
-    postdecisionGroup,
-    getAlldecisionGroup,
-    getDecisionGroup,
-    putDecisionGroup,
-    deleteDecisionGroup,
-}
+    postComment,getComments,getDecisionComments,updateComment,replyToComment,deleteComment,postShareWithComment,getWithComments, editComments,
+// groupNames controller
+postdecisionGroup,getAlldecisionGroup,getDecisionGroup,putDecisionGroup,deleteDecisionGroup,}
