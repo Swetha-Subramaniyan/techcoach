@@ -389,35 +389,36 @@ const deleteDecisionGroup = async (id) => {
     }
 };
 
-const postComment = async (groupId, commentText, decisionId) => {
+
+const postComment = async ({ groupId, comment, decisionId }) => {
     const token = localStorage.getItem('token');
 
-    // Logging the payload to be sent
     console.log("Posting comment with data:", {
         groupId,
-        commentText,
+        comment,
         decisionId,
     });
 
     try {
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/group/comments`,
+        
             {
                 groupId,
-                commentText,
+                comment,
                 decisionId,
             }, {
             headers: {
                 Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
-        }
-        );
+        });
 
         console.log("Response for comments", response);
         return response.data;
     } catch (error) {
         if (error.response) {
             console.error("Error posting comment:", error.response.data);
-            throw error.response.data; // Propagate error for further handling
+            throw error.response.data;
         } else if (error.request) {
             console.error("No response received:", error.request);
             throw new Error('No response received from the server');
@@ -427,6 +428,47 @@ const postComment = async (groupId, commentText, decisionId) => {
         }
     }
 };
+
+
+
+// const postComment = async (groupId, commentText, decisionId) => {
+//     const token = localStorage.getItem('token');
+
+//     // Logging the payload to be sent
+//     console.log("Posting comment with data:", {
+//         groupId,
+//         commentText,
+//         decisionId,
+//     });
+
+//     try {
+//         const response = await axios.post(`${process.env.REACT_APP_API_URL}/group/comments`,
+//             {
+//                 groupId,
+//                 commentText,
+//                 decisionId,
+//             }, {
+//             headers: {
+//                 Authorization: `Bearer ${token}`,
+//                 'Content-Type': 'application/json'
+//             }
+//         }
+//         );
+//         console.log("Response for comments", response);
+//         return response.data;
+//     } catch (error) {
+//         if (error.response) {
+//             console.error("Error posting comment:", error.response.data);
+//             throw error.response.data; // Propagate error for further handling
+//         } else if (error.request) {
+//             console.error("No response received:", error.request);
+//             throw new Error('No response received from the server');
+//         } else {
+//             console.error("Error", error.message);
+//             throw new Error('An error occurred while posting the comment');
+//         }
+//     }
+// };
 
 
 const postShareWithComment = async (groupId, commentText, decisionId) => {

@@ -87,32 +87,67 @@ const MemberSharedDecisions = () => {
         }
     };
 
+    // const handlePostComment = async (decisionId) => {
+    //     const comment = newComments[decisionId]?.trim();
+    //     if (!comment) {
+    //         return toast.error('Comment cannot be empty');
+    //     }
+    //     setButtonLoading((prevState) => ({ ...prevState, [decisionId]: true }));
+
+    //     try {
+    //         const dataToSend = {
+    //             groupId,
+    //             comment,
+    //             decisionId,
+    //         };
+    //        console.log('group',groupId)
+    //         console.log('Posting data:', dataToSend);
+    //         await postComment(groupId, comment, decisionId);
+
+    //         setNewComments((prevState) => ({ ...prevState, [decisionId]: '' }));
+    //         toast.success('Comment posted successfully');
+    //         fetchComments(groupId, decisionId);
+    //     } catch (error) {
+    //         toast.error('Error posting comment');
+    //         console.error('Error posting comment:', error);
+    //     } finally {
+    //         setButtonLoading((prevState) => ({ ...prevState, [decisionId]: false }));
+    //     }
+    // };
+
+
     const handlePostComment = async (decisionId) => {
         const comment = newComments[decisionId]?.trim();
         if (!comment) {
             return toast.error('Comment cannot be empty');
         }
         setButtonLoading((prevState) => ({ ...prevState, [decisionId]: true }));
-
+    
         try {
             const dataToSend = {
                 groupId,
                 comment,
                 decisionId,
             };
-
+            
+            console.log('group', groupId);
             console.log('Posting data:', dataToSend);
-            await postComment(groupId, comment, decisionId);
+    
+            // Pass the entire dataToSend object to the postComment function
+            await postComment(dataToSend);  // Pass an object here
+    
             setNewComments((prevState) => ({ ...prevState, [decisionId]: '' }));
             toast.success('Comment posted successfully');
             fetchComments(groupId, decisionId);
         } catch (error) {
             toast.error('Error posting comment');
             console.error('Error posting comment:', error);
-        } finally {
+        } 
+        finally {
             setButtonLoading((prevState) => ({ ...prevState, [decisionId]: false }));
         }
     };
+    
 
     const handleMailToPostComment = async (decisionId, email) => {
         const comment = newComments[decisionId]?.trim();

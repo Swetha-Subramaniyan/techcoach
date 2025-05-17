@@ -56,7 +56,7 @@ const DisplayInnerCircle = () => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
         };
-        
+
         window.addEventListener('resize', handleResize);
         return () => {
             window.removeEventListener('resize', handleResize);
@@ -136,7 +136,7 @@ const DisplayInnerCircle = () => {
     const existingMemberEmails = innerCircleDetails?.members?.map(member => member.email) || [];
     console.log("emaill", existingMemberEmails);
     // const isValidGmail = searchQuery.endsWith('@gmail.com') || searchQuery.endsWith('@greenestep.com');
-    
+
 
     const inviteButtonStyle = {
         color: "black",
@@ -152,7 +152,7 @@ const DisplayInnerCircle = () => {
             toast.error('Please enter a valid email address');
             return;
         }
-        setLoadingInvite(true); 
+        setLoadingInvite(true);
         try {
             const response = await innerCircleInvitation(email);
 
@@ -160,17 +160,17 @@ const DisplayInnerCircle = () => {
 
             if (response.message === "Mail Sent Successfully") {
                 toast('Invited successfully');
-                
-            }  else {
+
+            } else {
                 toast('Failed to Invite ');
             }
-            
-            
+
+
         } catch (error) {
             console.error('Error in Inviting:', error);
             toast('An error occurred while posting the comment');
         } finally {
-            setLoadingInvite(false); 
+            setLoadingInvite(false);
         }
     };
 
@@ -201,7 +201,7 @@ const DisplayInnerCircle = () => {
                             <p>Loading...</p>
                         </Container>
                     ) : (
-                        (!errorMessage || errorMessage === "No members in this inner circle" ) && innerCircleDetails && (
+                        (!errorMessage || errorMessage === "No members in this inner circle") && innerCircleDetails && (
                             <div>
                                 <h5>Members:</h5>
                                 <ListGroup>
@@ -217,7 +217,7 @@ const DisplayInnerCircle = () => {
                                                     className="float-right"
                                                     onClick={() => handleRemoveMember(member.user_id)}
                                                     disabled={loadingRemove[member.user_id]}
-                                                    style={{ margin: '1rem', color:"black", border:"0.1rem solid #DC3545", backgroundColor:"#DC3545", color:"White", padding:"0.5rem" }}
+                                                    style={{ margin: '1rem', color: "black", border: "0.1rem solid #DC3545", backgroundColor: "#DC3545", color: "White", padding: "0.5rem" }}
                                                 >
                                                     {loadingRemove[member.user_id] ? (
                                                         <Spinner
@@ -257,7 +257,7 @@ const DisplayInnerCircle = () => {
                                                     className="float-right"
                                                     onClick={() => handleAddMember(member.user_id)}
                                                     disabled={loadingAdd}
-                                                    style={{ margin: '1rem', color:"black", border:"0.1rem solid #DC3545", backgroundColor:"#DC3545", color:"White", padding:"0.5rem" }}
+                                                    style={{ margin: '1rem', color: "black", border: "0.1rem solid #DC3545", backgroundColor: "#DC3545", color: "White", padding: "0.5rem" }}
                                                 >
                                                     {loadingAdd ? (
                                                         <Spinner
@@ -277,9 +277,9 @@ const DisplayInnerCircle = () => {
                                             <Button
                                                 onClick={() => handleInvite(searchQuery)}
                                                 style={inviteButtonStyle}
-                                                disabled={loadingInvite} 
+                                                disabled={loadingInvite}
                                             >
-                                                {loadingInvite ? ( 
+                                                {loadingInvite ? (
                                                     <Spinner
                                                         as="span"
                                                         animation="border"
