@@ -7,6 +7,7 @@ import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
 import { getSharedDecisionDetails } from '../../Group/Network_Call';
 import './Nav.css';
 import withAuth from '../../withAuth';
+import { MdFormatListBulletedAdd } from "react-icons/md";
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -125,6 +126,10 @@ useEffect(() => {
   const navigateToTotalDecisions = () => {
     navigate('/readd');
   };
+  const navigateToDecision = () =>{
+    navigate("/decision")
+  }
+
 
   if (loading) {
     return (
@@ -170,6 +175,18 @@ useEffect(() => {
             onClick={navigateToReceivedDecisions}
           />
         </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <CustomCard
+            icon={<MdFormatListBulletedAdd style={{ fontSize: "30px" }} />}
+            title="Log a Decision"
+            onClick={navigateToDecision}
+          />
+        </Grid>
+      
+     
+
+
       </Grid>
       <Grid container spacing={4}>
         <Grid item xs={12}>
