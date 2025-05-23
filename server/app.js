@@ -42,8 +42,8 @@ app.use('/group',multigroupRoutes);
 app.use('/group',commentRoutes);
 app.use('/api/admin',adminRoutes);
 app.use('/api',advancedProfileRoutes);
-app.use('/link',advancedLinkRoutes);
-
+app.use('/link',advancedLinkRoutes); 
+ 
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
