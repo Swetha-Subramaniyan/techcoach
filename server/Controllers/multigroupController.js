@@ -459,10 +459,10 @@ const sendDecisionCircleInvitation = async (req, res) => {
                 <p>Accessing Decision Coach is simple. Use this Google email account to sign up and you are all set. And it is free.</p>
                 <p>If you are already a user of Decision Coach then just sign in.</p>
                 <p style="text-align: center;">
-                    <a href="https://decisioncoach.onrender.com" style="display: inline-block; padding: 10px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007BFF; text-decoration: none; border-radius: 5px;">Click here to access the application</a>
+                    <a href="https://decision-coach-app.onrender.com/" style="display: inline-block; padding: 10px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007BFF; text-decoration: none; border-radius: 5px;">Click here to access the application</a>
                 </p>
                 <p style="text-align: center;">
-                    <a href="https://decisioncoach.onrender.com" style="display: inline-block; padding: 10px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007BFF; text-decoration: none; border-radius: 5px;">Click Decision Circle to accept the invite</a>
+                    <a href="https://decision-coach-app.onrender.com/" style="display: inline-block; padding: 10px 20px; margin: 10px 0; font-size: 16px; color: #fff; background-color: #007BFF; text-decoration: none; border-radius: 5px;">Click Decision Circle to accept the invite</a>
                 </p>
                 <p>Regards,</p>
                 <p>Team @ Decision Coach</p>
