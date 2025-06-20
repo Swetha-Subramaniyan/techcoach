@@ -188,6 +188,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import withAuth from '../../withAuth';
 
+
+// Function to validate only alphabets and spaces (no numbers/special characters)
+const isValidText = (text) => /^[A-Za-z\s]+$/.test(text.trim());
+
 const AdvancedProfileTable = () => {
     const [formsData, setFormsData] = useState({
         goals: [''],
@@ -273,11 +277,69 @@ const AdvancedProfileTable = () => {
         }));
     };
 
-    const handleSubmit = async (e) => {
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+    //     setLoading(true);
+    //     const token = localStorage.getItem('token');
+    //     const { goals, values, resolutions, constraints, otherFactors } = formsData;
+    //     const data = { goals, values, resolutions, constraints, other_factors: otherFactors };
+
+    //     try {
+    //         if (isNewAdvancedProfile) {
+    //             await axios.post(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`
+    //                 }
+    //             });
+    //         } else {
+    //             await axios.put(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`
+    //                 }
+    //             });
+    //         }
+    //         setFormsData({
+    //             goals: [''],
+    //             values: [''],
+    //             resolutions: [''],
+    //             constraints: [''],
+    //             otherFactors: ['']
+    //         });
+    //         toast.success('Data submitted successfully!');
+    //         navigate('/advancedProfile');
+    //     } catch (error) {
+    //         console.error('Error submitting data:', error);
+    //         toast.error('An error occurred. Please try again.');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+      // Modified handleSubmit to add validation
+      const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         const token = localStorage.getItem('token');
         const { goals, values, resolutions, constraints, otherFactors } = formsData;
+
+        // Validate inputs
+        const fieldsToValidate = { goals, values, resolutions, constraints, otherFactors };
+        for (const [key, values] of Object.entries(fieldsToValidate)) {
+            for (let val of values) {
+                if (!val.trim()) {
+                    toast.error(`${displayNames[key]} cannot be empty.`); //  Empty check
+                    setLoading(false);
+                    return;
+                }
+                if (!isValidText(val)) {
+                    toast.error(`${displayNames[key]} must contain only letters and spaces.`); //  Format check
+                    setLoading(false);
+                    return;
+                }
+            }
+        }
+
+        //  Format for backend (otherFactors becomes other_factors)
         const data = { goals, values, resolutions, constraints, other_factors: otherFactors };
 
         try {
@@ -319,23 +381,27 @@ const AdvancedProfileTable = () => {
                     <form onSubmit={handleSubmit}>
                         {Object.keys(formsData).map((type) => (
                             <div key={type} className='form-section'>
-                                <div className='section-header'>
-                                    <h6>{displayNames[type]}:</h6>
-                                </div>
+                               
+<div className='section-header'>
+  <h6>
+    {displayNames[type]} <span style={{ color: 'red' }}>*</span>
+  </h6>
+</div>
                                 <div className='form-section-body'>
                                     {Array.isArray(formsData[type]) && formsData[type].length > 0 ? (
                                         formsData[type].map((item, index) => (
                                             <div key={index} className='input-row'>
                                                 {/* <label htmlFor={`${type}-${index}`}>
                                                     {displayNames[type]} {index + 1}:
-                                                </label> */}
-                                                <input
-                                                    id={`${type}-${index}`}
-                                                    type='text'
-                                                    value={item}
-                                                    placeholder={`Enter your ${displayNames[type].toLowerCase()}...`}
-                                                    onChange={(e) => handleChange(type, index, e.target.value)}
-                                                />
+                                                </label> */}                                    
+<input
+  id={`${type}-${index}`}
+  type='text'
+  value={item}
+  placeholder={`Enter your ${displayNames[type].toLowerCase()}... (letters only)`}
+  onChange={(e) => handleChange(type, index, e.target.value)}
+/>
+
                                                 <div className='action-icons'>
                                                     <IoIosAddCircleOutline
                                                         className='icons'
