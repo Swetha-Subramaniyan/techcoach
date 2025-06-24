@@ -13,6 +13,7 @@ import Chip from '@mui/material/Chip';
 import './Readd.css';
 import withAuth from '../../withAuth';
 import TrendChart from './Views/TrendChart';
+import { formatDate } from '../../../Utility/utils';
 
 const Readd = () => {
   const [data, setData] = useState([]);
@@ -137,13 +138,16 @@ const Readd = () => {
               <TableRow key={decision.decision_id} sx={{ backgroundColor: isPastDueDate ? '#ffcccc' : 'inherit' }}>
                 <TableCell>{indexOfFirstRecord + index + 1}</TableCell>
                 <TableCell>{decision.decision_name}</TableCell>
-                <TableCell>{new Date(decision.decision_due_date).toLocaleDateString()}</TableCell>
-                 <TableCell>
+                {/* <TableCell>{new Date(decision.decision_due_date).toLocaleDateString()}</TableCell> 
+                  <TableCell>
                   {decision.decision_taken_date
                     ? new Date(decision.decision_taken_date).toLocaleDateString()
                     : '--'}
-                </TableCell>
-                
+                </TableCell> */}
+              
+<TableCell> {formatDate(decision.decision_due_date)} </TableCell>
+<TableCell> {formatDate(decision.decision_taken_date)}</TableCell>
+            
                 <TableCell>{decision.user_statement}</TableCell>
                 <TableCell>
                   {decision.tags.map(tag => (
