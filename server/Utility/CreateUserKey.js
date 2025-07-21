@@ -1,39 +1,21 @@
 const getConnection = require('../Models/database');
-const crypto = require('crypto');
-
-const PUBLIC_KEY = process.env.PUBLIC_KEY;
 
 const createUserKey = async (req, res, next) => {
-    // console.log('Request User Id:', req.user.email);
-
     try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ error: 'Authentication error, user not found.' });
+        }
+
         const conn = await getConnection();
-        const [userData] = await conn.query('SELECT displayName, email FROM techcoach_lite.techcoach_users WHERE email = ?', req.user.email);
-        // console.log('assss', userData);
+        const [user] = await conn.query('SELECT displayName, email FROM techcoach_lite.techcoach_users WHERE email = ?', [req.user.email]);
         if (conn) { conn.release(); }
 
-        if (!userData || userData.length === 0) {
-            throw new Error('User not found');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found in database.' });
         }
 
-        const user = userData;
-        // console.log("dataaa", user);
-        const keyData = undefined + user.displayName + user.email;
+        req.user.key = user.displayName + user.email;
 
-        // console.log("dataaaa", keyData);   
-
-        function encryptText(text, key) {
-            const cipher = crypto.createCipher('aes-256-cbc', key);
-            let encryptedText = cipher.update(text, 'utf8', 'hex');
-            encryptedText += cipher.final('hex');
-            return encryptedText;
-        }
-
-        const encryptedKey = encryptText(keyData, PUBLIC_KEY);
-        // console.log('Encrypted key using username, email, id:', encryptedKey);
-
-        req.user.key = encryptedKey;
-        // console.log('Ukkkkkkkkkkkkkkser:', req.user.key);
         next();
     } catch (error) {
         console.error('Error creating user key:', error);
@@ -42,5 +24,3 @@ const createUserKey = async (req, res, next) => {
 };
 
 module.exports = createUserKey;
-
-

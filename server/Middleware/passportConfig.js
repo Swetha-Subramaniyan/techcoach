@@ -3,7 +3,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const mariadb = require('mariadb');
 const jwt = require('jsonwebtoken');
-const sendWelcomeEmail = require('../Utility/mail');
+const { sendWelcomeEmail } = require('../Utility/mail');
 const getConnection = require('../Models/database');
 
 const pool = mariadb.createPool({
