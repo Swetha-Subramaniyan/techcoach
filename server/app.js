@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT;
 
 app.use(express.json({ limit: "10mb" }));
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(morgan('tiny'));
 app.use(session({
     secret: 'cats',
