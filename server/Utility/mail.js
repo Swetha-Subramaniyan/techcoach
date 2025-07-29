@@ -46,4 +46,40 @@ async function sendWelcomeEmail(user) {
     }
 }
 
-module.exports = sendWelcomeEmail;
+// nwe otp vertifcation function
+
+async function sendOtpEmail(email, otp) {
+    const emailPayload = {
+        from: {
+            address: "Decision-Coach@www.careersheets.in",
+            name: "Techcoach Lite"
+        },
+        to: [ { email_address: { address: email } } ],
+        subject: "Your Verification Code",
+        htmlbody: `
+            <p>Hello,</p>
+            <p>Thank you for registering. Your One-Time Password (OTP) is:</p>
+            <h2 style="text-align:center; color:#333;">${otp}</h2>
+            <p>This code will expire in 10 minutes.</p>
+        `
+    };
+
+    const zeptoMailApiUrl = 'https://api.zeptomail.in/v1.1/email';
+    const zeptoMailApiKey = process.env.ZEPTO_MAIL_API_KEY;
+
+    try {
+        await axios.post(zeptoMailApiUrl, emailPayload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Zoho-enczapikey ${zeptoMailApiKey}`
+            }
+        });
+        console.log(`OTP Email sent to ${email}`);
+    } catch (error) {
+        console.error(`Failed to send OTP email to ${email}:`, error.response?.data || error.message);
+        throw new Error('Could not send OTP email.'); // Propagate error
+    }
+}
+
+
+module.exports = { sendWelcomeEmail, sendOtpEmail };
