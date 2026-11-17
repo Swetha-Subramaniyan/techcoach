@@ -73,10 +73,10 @@ export const notifyTeamsChannel = async (action, decision = {}, targetEmail = nu
   }
 }; */
 
-import { useEffect, useState } from "react";
 import {
   getTeamsWebhookByGroupName,
   sendTeamsDecisionCard,
+  sendTeamsChannelDecisionCard,
 } from "../api/DecisionCircle/Network_Call";
 
 //Teams incoming webhook
@@ -87,8 +87,8 @@ export const notifyTeamsChannel = async (
   targetEmail = null,
   commentText = null,
   group_name = null,
+  groupId = null,
 ) => {
-
   let TEAMS_CHANNEL_WEBHOOK_URL = "";
 
   try {
@@ -176,6 +176,11 @@ export const notifyTeamsChannel = async (
             {
               type: "FactSet",
               facts,
+            },
+            {
+              type: "TextBlock",
+              text: `DC_MAPPING_ID:${groupId}:${decision.decision_id}`,
+              isVisible: false,
             },
             ...commentBlock,
           ],

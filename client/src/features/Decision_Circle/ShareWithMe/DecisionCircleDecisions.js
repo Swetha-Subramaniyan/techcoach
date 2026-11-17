@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Autocomplete,
   TextField,
+  Typography
 } from "@mui/material";
 import {
   MdOutlineDeleteForever,
@@ -37,6 +38,7 @@ import { AiFillEdit } from "react-icons/ai";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import axios from "axios";
 import { notifyTeamsChannel } from "../../../utils/teamsWebhook";
+import { renderCommentWithMentions } from "../../../utils/formatCommentsWithMentions";
 
 const DecisionCircleDecisions = () => {
   const [groups, setGroups] = useState(null);
@@ -98,7 +100,7 @@ const DecisionCircleDecisions = () => {
       decision,
       recipientEmails,
       commentText,
-      groupName,
+      groupName,groupId
     ).catch((err) => console.error("Teams notify failed", err));
   };
 
@@ -487,7 +489,7 @@ const DecisionCircleDecisions = () => {
                             <div className="comment__header">
                               <div>
                                 <p className="comment__text">
-                                  {comment.comment}
+                                  {renderCommentWithMentions(comment.comment, members)}
                                 </p>
                                 <DisplayBiasTags tags={comment.biasTags} />
                               </div>
@@ -565,6 +567,30 @@ const DecisionCircleDecisions = () => {
                       }
                       placeholder="Add your comment…"
                     />
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      mt={2}
+                      mb={1}
+                    >
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Bias Tags
+                      </Typography>
+
+                      <a
+                        href="https://mahanakornpartners.com/the-effect-of-cognitive-bias-in-decision-making/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "13px",
+                          color: "#1976d2",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Learn about cognitive bias
+                      </a>
+                    </Box>
                     <Autocomplete
                       multiple
                       size="small"

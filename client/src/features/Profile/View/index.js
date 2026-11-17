@@ -24,9 +24,17 @@ import {
 import GooglePayButton from "../Subscription/GooglePayButton";
 import ApplePayButton from "../Subscription/ApplePayButton";
 import { getUserDecisions } from "../../../api/Decisions/Network_Call";
-import { deleteProfile, getProfile, getUserList } from "../../../api/User/Network_call";
-import { createSubscription, getSubscriptionStatus } from "../../../api/Subscription/Network_Call";
-
+import {
+  deleteProfile,
+  getProfile,
+  getUserList,
+} from "../../../api/User/Network_call";
+import {
+  createStripeSubscription,
+  createSubscription,
+  getStripeCheckoutSession,
+  getSubscriptionStatus,
+} from "../../../api/Subscription/Network_Call";
 
 const Profile = () => {
   const [formData, setFormData] = useState({});
@@ -45,6 +53,7 @@ const Profile = () => {
 
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
   const [paymentType, setPaymentType] = useState("recurring");
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   const handlePaymentSuccess = () => {
     toast.success("Payment completed successfully!");
@@ -53,23 +62,18 @@ const Profile = () => {
   };
 
   const handlePaymentError = (err) => {
-    toast.error(
-      err.response?.error || "Payment failed. Please try again.",
-    );
+    toast.error(err.response?.error || "Payment failed. Please try again.");
   };
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        
-        const userResp = await getUserList()
+        const userResp = await getUserList();
         const user =
-          userResp.tasks && userResp.tasks.length
-            ? userResp.tasks[0]
-            : {};
+          userResp.tasks && userResp.tasks.length ? userResp.tasks[0] : {};
         setUserData(user);
 
-        const formResp = await getProfile()
+        const formResp = await getProfile();
         setFormData(formResp);
         const decisionsResp = await getUserDecisions();
 
@@ -91,11 +95,42 @@ const Profile = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stripeStatus = params.get("stripe");
+    const sessionId = params.get("session_id");
+
+    if (stripeStatus === "success") {
+      const verify = async () => {
+        try {
+          if (sessionId) {
+            const info = await getStripeCheckoutSession(sessionId);
+            if (info.paymentStatus === "paid" || info.status === "complete") {
+              toast.success("Stripe subscription activated!");
+            }
+          }
+          const subResp = await getSubscriptionStatus();
+          setSubscription(subResp);
+        } catch (e) {
+          console.error("Stripe verify error", e);
+        } finally {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname,
+          );
+        }
+      };
+      verify();
+    } else if (stripeStatus === "cancel") {
+      toast.info("Stripe checkout cancelled.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const startSubscription = async () => {
     try {
       setSubscriptionLoading(true);
-
-      
 
       const res = await createSubscription();
 
@@ -124,7 +159,6 @@ const Profile = () => {
     );
     if (confirmation) {
       try {
-        
         await deleteProfile();
         localStorage.removeItem("token");
         window.location.reload();
@@ -215,9 +249,9 @@ const Profile = () => {
 
     let yPos = 40;
     const cellWidth = (doc.internal.pageSize.width - 60) / 2;
-    const cellHeight = 50; 
-    const rowSpacing = 80; 
-    const colSpacing = 10; 
+    const cellHeight = 50;
+    const rowSpacing = 80;
+    const colSpacing = 10;
 
     profileData.forEach((item, index) => {
       const rowIndex = Math.floor(index / 2);
@@ -265,6 +299,24 @@ const Profile = () => {
     toast("Profile data downloaded successfully");
   };
 
+  const startStripeSubscription = async () => {
+    try {
+      setStripeLoading(true);
+      const res = await createStripeSubscription(
+        process.env.REACT_APP_STRIPE_PRICE_MONTHLY || 'price_1UaxuSLfSDvxyGCueinLkcd4',
+        userData?.user_id || "",
+        userData?.email || "",
+      );
+      window.location.href = res.url;
+    } catch (err) {
+      console.error("Stripe checkout error:", err);
+      toast.error(
+        err.response?.data?.error || "Failed to start Stripe checkout",
+      );
+      setStripeLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-spinner">
@@ -307,13 +359,13 @@ const Profile = () => {
           </div>
 
           <div className="profile-action-container">
-          <button
-            className="subscribe-btn"
-            onClick={() => navigate("/profile/linked-decision")}
-          >
-            View linked decisions →
-          </button>
-        </div>
+            <button
+              className="subscribe-btn"
+              onClick={() => navigate("/profile/linked-decision")}
+            >
+              View linked decisions →
+            </button>
+          </div>
         </div>
         <div className="profile-header-container">
           <div className="subscription-card">
@@ -452,6 +504,33 @@ const Profile = () => {
                       }
                     />
                   </Box>
+                  <Box
+                    sx={{
+                      border: "1px solid #ddd",
+                      borderRadius: 2,
+                      p: 1.5,
+                      mb: 1.5,
+                      mt:1.5,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setPaymentType("stripe")}
+                  >
+                    <FormControlLabel
+                      value="stripe"
+                      control={<Radio />}
+                      label={
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            Card / Stripe Subscription ($1 / Month)
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Secure hosted checkout via Stripe. Card, Link,
+                            wallets — cancel anytime.
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
                 </RadioGroup>
 
                 <Divider sx={{ my: 2 }} />
@@ -505,6 +584,33 @@ const Profile = () => {
                       onSuccess={handlePaymentSuccess}
                       onError={handlePaymentError}
                     />
+                  </Box>
+                )}
+                {paymentType === "stripe" && (
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      You'll be redirected to Stripe's secure checkout page:
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      sx={{
+                        backgroundColor: "#635bff",
+                        py: 1.2,
+                        textTransform: "none",
+                        "&:hover": { backgroundColor: "#5449e0" },
+                      }}
+                      onClick={startStripeSubscription}
+                      disabled={stripeLoading}
+                    >
+                      {stripeLoading
+                        ? "Redirecting to Stripe..."
+                        : "Proceed with Stripe"}
+                    </Button>
                   </Box>
                 )}
               </DialogContent>

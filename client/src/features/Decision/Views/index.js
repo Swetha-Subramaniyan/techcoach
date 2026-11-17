@@ -41,6 +41,7 @@ const DecisionView = () => {
   const [biasTags, setBiasTags] = useState([]);
   const [replyBiasTags, setReplyBiasTags] = useState({});
   const [editBiasTags, setEditBiasTags] = useState([]);
+  const [members, setMembers] = useState([]);
 
   useEffect(() => {
     (async () => setInnerGroup(await checkInnerCircleExists()))();
@@ -113,7 +114,23 @@ const DecisionView = () => {
   const loadDecisionComments = async () => {
     try {
       const c = await getDecisionComments(id);
-      setDecisionComments(c.comments || []);
+
+      const comments = c.comments || [];
+      setDecisionComments(comments);
+
+      const uniqueMembers = [
+        ...new Map(
+          comments.map((comment) => [
+            comment.email?.toLowerCase(),
+            {
+              email: comment.email,
+              displayname: comment.displayname,
+            },
+          ]),
+        ).values(),
+      ].filter((member) => member.email);
+
+      setMembers(uniqueMembers);
     } catch (e) {
       console.error("Failed to fetch decision comments", e);
     }
@@ -172,31 +189,34 @@ const DecisionView = () => {
   };
 
   const openEdit = (kind) => (comment) => {
-  setEditTarget({ comment, kind });
-  setEditContent(comment.comment);
-  setEditBiasTags(comment.biasTags || []);
-};
+    setEditTarget({ comment, kind });
+    setEditContent(comment.comment);
+    setEditBiasTags(comment.biasTags || []);
+  };
 
   const closeEdit = () => {
-  setEditTarget(null);
-  setEditContent("");
-  setEditBiasTags([]);
-};
+    setEditTarget(null);
+    setEditContent("");
+    setEditBiasTags([]);
+  };
 
   const saveEdit = async () => {
     if (!editTarget) return;
     const { comment, kind } = editTarget;
 
     const biasTagsPayload = (editBiasTags || []).map((t) =>
-    typeof t === "object" ? t : { id: Number(t) },
-  );
+      typeof t === "object" ? t : { id: Number(t) },
+    );
 
     try {
       if (kind === "reply") {
         await EditCommentAdded(comment.id, editContent, biasTagsPayload);
         await loadSharedComments();
       } else {
-        await updateComment(comment.id, { comment: editContent ,   biasTagIds: biasTagsPayload.map((t) => Number(t.id)).filter(Boolean),});
+        await updateComment(comment.id, {
+          comment: editContent,
+          biasTagIds: biasTagsPayload.map((t) => Number(t.id)).filter(Boolean),
+        });
         await loadDecisionComments();
       }
       toast.success("Updated successfully");
@@ -251,81 +271,71 @@ const DecisionView = () => {
         biasTags={biasTags}
         replyBiasTags={replyBiasTags}
         onReplyBiasTagsChange={handleReplyBiasTagsChange}
+        members={members}
       />
 
       <CommentsList
         title="Comments"
         comments={visibleDecisionComments}
         onEditComment={openEdit("comment")}
+        members={members}
       />
 
-    
-{editTarget && (
-  <div className="modal-overlay" onClick={closeEdit}>
-    <div
-      className="modal-card"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3>Edit Comment</h3>
+      {editTarget && (
+        <div className="modal-overlay" onClick={closeEdit}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Comment</h3>
 
-      <textarea
-        value={editContent}
-        onChange={(e) => setEditContent(e.target.value)}
-        placeholder="Edit your comment..."
-      />
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Edit your comment..."
+            />
 
-      <Autocomplete
-        multiple
-        size="small"
-        options={biasTags}
-        value={editBiasTags}
-        getOptionLabel={(option) => option.tag_name || ""}
-        isOptionEqualToValue={(option, value) =>
-          String(option.id) === String(value.id)
-        }
-        onChange={(event, newValue) =>
-          setEditBiasTags(newValue)
-        }
-        renderOption={(props, option) => (
-          <li {...props} key={option.id}>
-            <Box>
-              <div style={{ fontWeight: 600 }}>
-                {option.tag_name}
-              </div>
-              <div style={{ fontSize: 12, color: "#64748b" }}>
-                {option.tag_type}
-              </div>
-            </Box>
-          </li>
-        )}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            placeholder="Add or remove bias tags..."
-          />
-        )}
-        sx={{ mt: 2 }}
-      />
+            <Autocomplete
+              multiple
+              size="small"
+              options={biasTags}
+              value={editBiasTags}
+              getOptionLabel={(option) => option.tag_name || ""}
+              isOptionEqualToValue={(option, value) =>
+                String(option.id) === String(value.id)
+              }
+              onChange={(event, newValue) => setEditBiasTags(newValue)}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  <Box>
+                    <div style={{ fontWeight: 600 }}>{option.tag_name}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {option.tag_type}
+                    </div>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Add or remove bias tags..."
+                />
+              )}
+              sx={{ mt: 2 }}
+            />
 
-      <div className="modal-card__actions">
-        <button
-          className="decision-btn"
-          onClick={closeEdit}
-        >
-          Cancel
-        </button>
+            <div className="modal-card__actions">
+              <button className="decision-btn" onClick={closeEdit}>
+                Cancel
+              </button>
 
-        <button
-          className="decision-btn decision-btn--primary"
-          onClick={saveEdit}
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+              <button
+                className="decision-btn decision-btn--primary"
+                onClick={saveEdit}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShareModal
         showModal={showModal}

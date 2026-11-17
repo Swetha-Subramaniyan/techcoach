@@ -28,8 +28,10 @@ const DecisionCircleShare = () => {
         const res = await getReferredDecisionById(id);
         const d = res?.decisionData?.[0];
         if (!d) return;
+        console.log("sssssssssssssssssssssss", d)
         const fmt = (s) => (s ? new Date(s).toISOString().split('T')[0] : '');
         setDecision({
+          decision_id:d.decision_id,
           decision_name: d.decision_name,
           decision_due_date: fmt(d.decision_due_date),
           decision_taken_date: fmt(d.decision_taken_date),
@@ -83,7 +85,7 @@ const DecisionCircleShare = () => {
 
       if (emails.length) {
         const results = await Promise.allSettled(
-          emails.map((email) => notifyTeamsChannel('SHARED', decision, email,"", currentGroup.group_name ))
+          emails.map((email) => notifyTeamsChannel('SHARED', decision, email,"", currentGroup.group_name, group_id ))
         );
         results.forEach((r, i) => {
           if (r.status === 'rejected') {

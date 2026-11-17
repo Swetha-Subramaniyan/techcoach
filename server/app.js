@@ -17,8 +17,14 @@ const advancedProfileRoutes = require('./routes/advancedProfileRoutes');
 const advancedLinkRoutes = require('./routes/advancedLinkRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const teamsNotificationRoutes = require('./routes/teamsNotificationRoutes');
+const graphAPIRoutes = require('./routes/graphAPIRoutes');
+const {
+  startTeamsSubscriptionCron,
+} = require("./Jobs/teamsSubscriptionCron");
 
 require('dotenv').config();
+
+startTeamsSubscriptionCron();
 
 const app = express();
 const PORT = process.env.PORT;
@@ -26,6 +32,8 @@ const PORT = process.env.PORT;
 app.use(express.json({ limit: "10mb" }));
 app.use(cors({ origin: "*" }));
 app.use(morgan('tiny'));
+
+app.use('/graphAPI',graphAPIRoutes);
 
 app.use(session({
     secret: 'cats',
@@ -39,9 +47,9 @@ app.use('/', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', decisionRoutes);
 app.use('/group', groupRoutes);
+app.use('/group',multigroupRoutes);
 app.use('/skill',skillRoutes);
 app.use('/api',linkRoutes);
-app.use('/group',multigroupRoutes);
 app.use('/group',commentRoutes);
 app.use('/api/admin',adminRoutes);
 app.use('/api',advancedProfileRoutes);

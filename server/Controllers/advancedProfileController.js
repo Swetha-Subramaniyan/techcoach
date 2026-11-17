@@ -1,5 +1,47 @@
-const getConnection = require("../Models/database");
+const getConnection = require("../models/database");
 const crypto = require('crypto');
+
+const ALGORITHM = "aes-256-cbc";
+
+const getSecureKey = (keyString) => {
+  return crypto
+    .createHash("sha256")
+    .update(String(keyString))
+    .digest("base64")
+    .substr(0, 32);
+};
+
+const decryptText = (text, userKey) => {
+  if (!text || typeof text !== "string") {
+    return null;
+  }
+
+  if (text.includes(":")) {
+    try {
+      const key = getSecureKey(userKey);
+      const textParts = text.split(":");
+      const iv = Buffer.from(textParts.shift(), "hex");
+      const encryptedText = Buffer.from(textParts.join(":"), "hex");
+      const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(key), iv);
+      let decrypted = decipher.update(encryptedText);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      return decrypted.toString();
+    } catch (error) {
+      console.error("Failed to decrypt new format data:", error);
+      return null;
+    }
+  } else {
+    try {
+      const decipher = crypto.createDecipher("aes-256-cbc", userKey);
+      let decrypted = decipher.update(text, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      return decrypted;
+    } catch (error) {
+      console.error("Failed to decrypt old format data:", error);
+      return null;
+    }
+  }
+};
 
 
 const getUserList = async (req, res) => {
@@ -133,18 +175,6 @@ const getAdvancedProfile = async (req, res) => {
         return res.status(400).json({ error: 'User authentication details are missing' });
       }
  
-    const decryptText = (encryptedText, key) => {
-        try {
-          if (!encryptedText) return null;
-          const decipher = crypto.createDecipher('aes-256-cbc', key);
-          let decryptedText = decipher.update(encryptedText, 'hex', 'utf8');
-          decryptedText += decipher.final('utf8');
-          return decryptedText;
-        } catch (err) {
-          console.error('Decryption error:', err);
-          return null;
-        }
-      };
 
     let conn;
   

@@ -37,10 +37,12 @@ import {
   CircularProgress,
   Autocomplete,
   TextField,
+  Typography,
   Box as MuiBox,
 } from "@mui/material";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { notifyTeamsChannel } from "../../../utils/teamsWebhook";
+import { renderCommentWithMentions } from "../../../utils/formatCommentsWithMentions";
 
 const DecisionCircle = () => {
   const [groups, setGroups] = useState(null);
@@ -103,6 +105,7 @@ const DecisionCircle = () => {
       recipientEmails,
       commentText,
       groupName,
+      groupId,
     ).catch((err) => console.error("Teams notify failed", err));
   };
 
@@ -543,10 +546,12 @@ const DecisionCircle = () => {
                             key={comment.id}
                             className={`comment ${isAuthor ? "comment--author" : ""} ${
                               isReply ? "comment--reply" : ""
-                            }`}
+                            }`} 
                           >
                             <div className="comment__header">
-                              <p className="comment__text">{comment.comment}</p>
+                              <p className="comment__text">
+                                {renderCommentWithMentions(comment.comment, members)}
+                              </p>
                               <DisplayBiasTags tags={comment.biasTags} />
                               {isAuthor && (
                                 <div className="dc-comment-actions">
@@ -621,6 +626,33 @@ const DecisionCircle = () => {
                                   )
                                 }
                               />
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="space-between"
+                                mt={2}
+                                mb={1}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  fontWeight={600}
+                                >
+                                  Bias Tags
+                                </Typography>
+
+                                <a
+                                  href="https://mahanakornpartners.com/the-effect-of-cognitive-bias-in-decision-making/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: "13px",
+                                    color: "#1976d2",
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  Learn about cognitive bias
+                                </a>
+                              </Box>
 
                               <Autocomplete
                                 multiple

@@ -2,6 +2,7 @@
 import React from "react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { AiFillEdit } from "react-icons/ai";
+import { renderCommentWithMentions } from "../../../utils/formatCommentsWithMentions";
 
 const CommentItem = ({
   comment,
@@ -9,6 +10,7 @@ const CommentItem = ({
   isAuthor,
   onEdit,
   children,
+  members
 }) => {
   const edited = comment.created_at !== comment.updated_at;
 
@@ -43,7 +45,9 @@ const CommentItem = ({
         }
       >
         <div className="comment__header">
-          <p className="comment__text">{comment.comment}</p>
+          <p className="comment__text">
+            {renderCommentWithMentions(comment.comment, members)}
+          </p>
 
           {isAuthor && onEdit && (
             <button

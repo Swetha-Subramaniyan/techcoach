@@ -1,4 +1,4 @@
-const getConnection = require("../Models/database");
+const getConnection = require("../models/database");
 const crypto = require("crypto");
 const ALGORITHM = "aes-256-cbc";
 const getSecureKey = (keyString) => {
@@ -642,15 +642,15 @@ const migrateGoogleToMicrosoft = async (req, res) => {
       results,
     });
   } catch (error) {
-    console.error("Account migration failed:", error.message);
-
-    return res.status(500).json({
-      error:
-        "Migration failed. The current user's transaction was rolled back.",
-      completedMigrations: results,
-      failedMigrationIndex: results.length,
-    });
-  }
+  console.error("Account migration failed:", error);
+  return res.status(500).json({
+    error: "Migration failed.",
+    reason: error.message,          // ← ADD THIS
+    stack: error.stack,             // ← ADD THIS TEMPORARILY
+    completedMigrations: results,
+    failedMigrationIndex: results.length,
+  });
+}
 };
 
 module.exports = {

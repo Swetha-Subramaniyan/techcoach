@@ -11,7 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.7.2",
+    "@azure/identity": "^4.13.1",
+    "axios": "^1.21.1",
     "bigint-json": "^1.1.5",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -24,12 +25,14 @@
     "mongoose": "^8.2.0",
     "morgan": "^1.10.0",
     "mysql2": "^3.9.2",
+    "node-cron": "^4.6.0",
     "nodemailer": "^6.9.13",
     "nodemon": "^3.1.7",
     "passport": "^0.7.0",
     "passport-google-oauth2": "^0.2.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-microsoft": "^2.1.0",
-    "sequelize": "^6.37.1"
+    "sequelize": "^6.37.1",
+    "stripe": "^23.1.0"
   }
 }
