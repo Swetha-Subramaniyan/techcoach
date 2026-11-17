@@ -1856,7 +1856,7 @@
   gap: var(--space-sm);
 }
 
-.badge {
+.badges {
   background: var(--primary-light);
   color: var(--primary);
   font-size: 0.75rem;

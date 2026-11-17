@@ -132,12 +132,17 @@ const Decision = () => {
 
       return matchName || matchTag;
     })
+
     .filter((d) => {
       if (!showPendingOutcome) return true;
 
       const outcomeTags = ["Best", "Good", "Gone Bad", "Regretting"];
 
-      return d.tags?.some((t) => outcomeTags.includes(t.tag_name?.trim()));
+      const hasOutcome = d.tags?.some((t) =>
+        outcomeTags.includes(t.tag_name?.trim()),
+      );
+
+      return !hasOutcome;
     });
 
   const startIdx = (currentPage - 1) * RECORDS_PER_PAGE;

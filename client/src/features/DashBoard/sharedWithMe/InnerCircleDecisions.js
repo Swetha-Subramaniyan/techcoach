@@ -790,6 +790,30 @@ const InnerCircleDecision = () => {
                                 )
                               }
                             />
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              mt={2}
+                              mb={1}
+                            >
+                              <Typography variant="subtitle2" fontWeight={600}>
+                                Bias Tags
+                              </Typography>
+
+                              <a
+                                href="https://mahanakornpartners.com/the-effect-of-cognitive-bias-in-decision-making/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: "13px",
+                                  color: "#1976d2",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                Learn about cognitive bias
+                              </a>
+                            </Box>
                             <Autocomplete
                               multiple
                               size="small"
@@ -836,6 +860,7 @@ const InnerCircleDecision = () => {
                               )}
                               sx={{ mt: 1.5 }}
                             />
+
                             <Grid
                               className="sharedDecision-actions"
                               container

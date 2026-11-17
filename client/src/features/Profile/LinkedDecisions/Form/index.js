@@ -284,8 +284,6 @@ const AddLink = () => {
 
   const handleProfileSubmit = async () => {
 
-        console.log("wwwwwwwwww", id, selectedProfiles)
-
     try {
       await postProfileLink(id, selectedProfiles);
       toast.success("SWOT links saved");

@@ -7,13 +7,113 @@ const {
   captureOneTimeOrder,
   getClientToken,
 } = require("../Services/paypalService");
-const getConnection = require("../Models/database");
+const getConnection = require("../models/database");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const PRICE_IDS = {
+  monthly: process.env.STRIPE_PRICE_MONTHLY || "price_1UaxuSLfSDvxyGCueinLkcd4",
+  yearly: process.env.STRIPE_PRICE_YEARLY || "price_1UaxuSLfSDvxyGCuSQxLO8PR",
+};
 
 const ensureAuth = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   next();
+};
+
+const convertStripeDate = (timestamp) => {
+  if (!timestamp) return null;
+
+  return new Date(timestamp * 1000)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+};
+
+const mapStripeStatus = (status) => {
+  switch (status) {
+    case "active":
+    case "trialing":
+      return "ACTIVE";
+
+    case "past_due":
+    case "unpaid":
+      return "SUSPENDED";
+
+    case "canceled":
+      return "CANCELLED";
+
+    case "incomplete":
+    case "incomplete_expired":
+      return "PENDING";
+
+    default:
+      return "INACTIVE";
+  }
+};
+
+const saveStripeSubscription = async ({
+  userId,
+  subscription,
+  customerId,
+  lastPaymentTime = null,
+}) => {
+  if (!userId || !subscription?.id) {
+    throw new Error("Missing userId or Stripe subscription ID");
+  }
+
+  let conn;
+
+  try {
+    conn = await getConnection();
+
+    const status = mapStripeStatus(subscription.status);
+
+    const periodEnd =
+      subscription.current_period_end ||
+      subscription.items?.data?.[0]?.current_period_end ||
+      null;
+
+    const nextBillingTime = convertStripeDate(periodEnd);
+
+    await conn.query(
+      `INSERT INTO techcoach_lite.user_subscription
+      (
+        user_id,
+        subscription_id,
+        mode_of_payment,
+        stripe_customer_id,
+        status,
+        next_billing_time,
+        last_payment_time
+      )
+      VALUES (?, ?, 'STRIPE', ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        subscription_id = VALUES(subscription_id),
+        mode_of_payment = 'STRIPE',
+        stripe_customer_id = VALUES(stripe_customer_id),
+        status = VALUES(status),
+        next_billing_time = VALUES(next_billing_time),
+        last_payment_time = COALESCE(
+          VALUES(last_payment_time),
+          last_payment_time
+        )`,
+      [
+        userId,
+        subscription.id,
+        customerId || null,
+        status,
+        nextBillingTime,
+        lastPaymentTime,
+      ],
+    );
+
+    console.log(
+      `Stripe subscription saved for user ${userId}: ${subscription.id}`,
+    );
+  } finally {
+    if (conn) conn.release();
+  }
 };
 
 router.post("/create", ensureAuth, async (req, res) => {
@@ -52,7 +152,6 @@ router.post("/confirm", ensureAuth, async (req, res) => {
       });
     }
 
-    // ✅ Convert ISO date → MySQL DATETIME
     const convertPaypalDate = (paypalDate) => {
       if (!paypalDate) return null;
 
@@ -71,10 +170,10 @@ router.post("/confirm", ensureAuth, async (req, res) => {
 
     await conn.query(
       `INSERT INTO techcoach_lite.user_subscription
-      (user_id, paypal_subscription_id, status, next_billing_time, last_payment_time)
-      VALUES (?, ?, ?, ?, ?)
+      (user_id, subscription_id, mode_of_payment, status, next_billing_time, last_payment_time)
+      VALUES (?, ?,'PAYPAL', ?, ?, ?)
       ON DUPLICATE KEY UPDATE
-      paypal_subscription_id = VALUES(paypal_subscription_id),
+      subscription_id = VALUES(subscription_id),
       status = VALUES(status),
       next_billing_time = VALUES(next_billing_time),
       last_payment_time = VALUES(last_payment_time)`,
@@ -110,7 +209,7 @@ router.get("/status", ensureAuth, async (req, res) => {
     const rows = await conn.query(
       `SELECT 
          status,
-         paypal_subscription_id,
+         subscription_id,
          last_payment_time,
          next_billing_time,
          updated_at
@@ -182,10 +281,10 @@ router.post("/orders/:orderId/capture", ensureAuth, async (req, res) => {
 
       await conn.query(
         `INSERT INTO techcoach_lite.user_subscription
-        (user_id, paypal_subscription_id, status, next_billing_time, last_payment_time)
-        VALUES (?, ?, 'ACTIVE', ?, ?)
+        (user_id, subscription_id, mode_of_payment,status, next_billing_time, last_payment_time)
+        VALUES (?, ?, 'PAYPAL', 'ACTIVE', ?, ?)
         ON DUPLICATE KEY UPDATE
-        paypal_subscription_id = VALUES(paypal_subscription_id),
+        subscription_id = VALUES(subscription_id),
         status = 'ACTIVE',
         next_billing_time = VALUES(next_billing_time),
         last_payment_time = VALUES(last_payment_time)`,
@@ -214,5 +313,276 @@ router.get("/client-token", ensureAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to generate client token" });
   }
 });
+
+router.post("/create-checkout-session", ensureAuth, async (req, res) => {
+  try {
+    const { priceId } = req.body;
+
+    if (!Object.values(PRICE_IDS).includes(priceId)) {
+      return res.status(400).json({
+        error: "Invalid priceId",
+      });
+    }
+
+    const userId = String(req.user.id);
+    const email = req.user.email || undefined;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+
+      customer_email: email,
+
+      client_reference_id: userId,
+
+      metadata: {
+        userId,
+      },
+
+      subscription_data: {
+        metadata: {
+          userId,
+        },
+      },
+
+      billing_address_collection: "auto",
+
+      success_url: `${process.env.CLIENT_URL}/profile?stripe=success&session_id={CHECKOUT_SESSION_ID}`,
+
+      cancel_url: `${process.env.CLIENT_URL}/profile?stripe=cancel`,
+    });
+
+    res.json({
+      url: session.url,
+    });
+  } catch (err) {
+    console.error("Stripe checkout error:", err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+
+router.get("/checkout-session/:id", ensureAuth, async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(req.params.id, {
+      expand: ["subscription"],
+    });
+
+    const userId = String(req.user.id);
+
+    if (session.client_reference_id !== userId) {
+      return res.status(403).json({
+        error: "This checkout session does not belong to this user",
+      });
+    }
+
+    if (
+      session.status === "complete" &&
+      session.payment_status === "paid" &&
+      session.subscription
+    ) {
+      const subscription =
+        typeof session.subscription === "string"
+          ? await stripe.subscriptions.retrieve(session.subscription)
+          : session.subscription;
+
+      await saveStripeSubscription({
+        userId,
+        subscription,
+        customerId: session.customer,
+        lastPaymentTime: convertStripeDate(session.created),
+      });
+    }
+
+    res.json({
+      status: session.status,
+      paymentStatus: session.payment_status,
+      subscriptionStatus:
+        typeof session.subscription === "object"
+          ? session.subscription?.status
+          : null,
+      customerId: session.customer,
+      subscriptionId:
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id || null,
+      metadata: session.metadata,
+    });
+  } catch (err) {
+    console.error("Stripe session verification error:", err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+
+router.post("/create-portal-session", async (req, res) => {
+  try {
+    const { customerId } = req.body;
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${process.env.CLIENT_URL}/profile`,
+    });
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (request, response) => {
+    const signature = request.headers["stripe-signature"];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        endpointSecret,
+      );
+    } catch (err) {
+      console.error(
+        "Stripe webhook signature verification failed:",
+        err.message,
+      );
+      return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+
+          const userId =
+            session.client_reference_id || session.metadata?.userId;
+
+          if (
+            session.mode === "subscription" &&
+            session.payment_status === "paid" &&
+            session.subscription &&
+            userId
+          ) {
+            const subscription =
+              typeof session.subscription === "string"
+                ? await stripe.subscriptions.retrieve(session.subscription)
+                : session.subscription;
+
+            await saveStripeSubscription({
+              userId,
+              subscription,
+              customerId: session.customer,
+              lastPaymentTime: convertStripeDate(session.created),
+            });
+          }
+
+          break;
+        }
+
+        case "customer.subscription.created":
+        case "customer.subscription.updated":
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+
+          const userId = subscription.metadata?.userId;
+
+          if (!userId) {
+            console.error(
+              "No userId found in Stripe subscription metadata:",
+              subscription.id,
+            );
+            break;
+          }
+
+          await saveStripeSubscription({
+            userId,
+            subscription,
+            customerId: subscription.customer,
+          });
+
+          break;
+        }
+
+        case "invoice.paid": {
+          const invoice = event.data.object;
+
+          const subscriptionId =
+            typeof invoice.subscription === "string"
+              ? invoice.subscription
+              : invoice.subscription?.id;
+
+          if (subscriptionId) {
+            const subscription =
+              await stripe.subscriptions.retrieve(subscriptionId);
+
+            const userId = subscription.metadata?.userId;
+
+            if (userId) {
+              await saveStripeSubscription({
+                userId,
+                subscription,
+                customerId: subscription.customer,
+                lastPaymentTime: convertStripeDate(invoice.created),
+              });
+            }
+          }
+
+          break;
+        }
+
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+
+          const subscriptionId =
+            typeof invoice.subscription === "string"
+              ? invoice.subscription
+              : invoice.subscription?.id;
+
+          if (subscriptionId) {
+            const subscription =
+              await stripe.subscriptions.retrieve(subscriptionId);
+
+            const userId = subscription.metadata?.userId;
+
+            if (userId) {
+              await saveStripeSubscription({
+                userId,
+                subscription,
+                customerId: subscription.customer,
+              });
+            }
+          }
+
+          break;
+        }
+
+        default:
+          console.log(`Unhandled Stripe event: ${event.type}`);
+      }
+
+      return response.json({
+        received: true,
+      });
+    } catch (err) {
+      console.error("Stripe webhook processing error:", err);
+
+      return response.status(500).json({
+        error: "Webhook processing failed",
+      });
+    }
+  },
+);
 
 module.exports = router;

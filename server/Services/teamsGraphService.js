@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { ClientSecretCredential } = require("@azure/identity");
 
 const TENANT_ID = process.env.MICROSOFT_TENANT_ID;
 const CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
@@ -105,7 +106,6 @@ async function sendDecisionCardToUser(
         { title: "Key Reason:", value: payload.reasons || "None" },
       ];
 
-  // 2. Build the adaptive card
   const adaptiveCardStructure = {
     $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
     type: "AdaptiveCard",
@@ -231,4 +231,144 @@ async function sendCommentNotificationToMembers(
   return { sent: unique.length - failed.length, failed };
 }
 
-module.exports = { sendDecisionCardToUser, sendCommentNotificationToMembers };
+const credential = new ClientSecretCredential(
+  process.env.MICROSOFT_TENANT_ID,
+  process.env.MICROSOFT_CLIENT_ID,
+  process.env.MICROSOFT_CLIENT_SECRET,
+);
+
+const getGraphToken = async () => {
+  const token = await credential.getToken(
+    "https://graph.microsoft.com/.default",
+  );
+
+  return token.token;
+};
+
+const graphRequest = async (method, url, data = null) => {
+  const token = await getGraphToken();
+
+  const response = await axios({
+    method,
+    url: `https://graph.microsoft.com/v1.0${url}`,
+    data,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+const getSubscriptions = async () => {
+  return graphRequest("GET", "/subscriptions");
+};
+
+const createChannelSubscription = async (teamId, channelId) => {
+  const expirationDateTime = new Date(
+    Date.now() + 60 * 60 * 1000,
+  ).toISOString();
+
+  const result = await getSubscriptions();
+
+  return graphRequest("POST", "/subscriptions", {
+    changeType: "created",
+    notificationUrl: process.env.TEAMS_CALLBACK_URL,
+    resource: `/teams/${teamId}/channels/${channelId}/messages`,
+    expirationDateTime,
+    clientState: process.env.TEAMS_CLIENT_STATE,
+  });
+};
+
+const getChannelMessage = async (teamId, channelId, messageId) => {
+  return graphRequest(
+    "GET",
+    `/teams/${teamId}/channels/${channelId}/messages/${messageId}`,
+  );
+};
+
+
+const renewChannelSubscription = async (subscriptionId) => {
+  const accessToken = await getGraphToken();
+
+  const newExpiry = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+  const response = await axios.patch(
+    `https://graph.microsoft.com/v1.0/subscriptions/${subscriptionId}`,
+    {
+      expirationDateTime: newExpiry.toISOString(),
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+
+const getTeamsChannelReply = async (
+  teamId,
+  channelId,
+  parentMessageId,
+  replyMessageId
+) => {
+  const accessToken = await getGraphToken();
+
+  const url =
+    `https://graph.microsoft.com/v1.0/teams/${teamId}` +
+    `/channels/${channelId}` +
+    `/messages/${parentMessageId}` +
+    `/replies/${replyMessageId}`;
+
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  return response.data;
+};
+
+
+
+const sendChannelAdaptiveCard = async (
+  teamId,
+  channelId,
+  adaptiveCard
+) => {
+  return graphRequest(
+    "POST",
+    `/teams/${teamId}/channels/${channelId}/messages`,
+    {
+      body: {
+        contentType: "html",
+        content: '<attachment id="decisionCard"></attachment>',
+      },
+      attachments: [
+        {
+          id: "decisionCard",
+          contentType: "application/vnd.microsoft.card.adaptive",
+          content: JSON.stringify(adaptiveCard),
+        },
+      ],
+    }
+  );
+};
+
+
+
+module.exports = {
+  getGraphToken,
+  sendDecisionCardToUser,
+  sendCommentNotificationToMembers,
+  graphRequest,
+  createChannelSubscription,
+  getChannelMessage,
+  renewChannelSubscription,
+  getTeamsChannelReply,
+  sendChannelAdaptiveCard
+};

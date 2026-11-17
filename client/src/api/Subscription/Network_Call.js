@@ -3,7 +3,6 @@ import axios from "axios";
 import { getAuthHeaders } from "../api";
 
 const createSubscription = async () => {
-  
   try {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}/api/subscription/create`,
@@ -19,7 +18,6 @@ const createSubscription = async () => {
 };
 
 const confirmSubscription = async (subscriptionId) => {
-  
   try {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}/api/subscription/confirm`,
@@ -34,7 +32,6 @@ const confirmSubscription = async (subscriptionId) => {
 };
 
 const getSubscriptionStatus = async () => {
-  
   try {
     const response = await axios.get(
       `${process.env.REACT_APP_API_URL}/api/subscription/status`,
@@ -49,7 +46,6 @@ const getSubscriptionStatus = async () => {
 };
 
 const createOneTimeOrder = async (orderPayload) => {
-  
   try {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}/api/subscription/orders/create`,
@@ -65,7 +61,6 @@ const createOneTimeOrder = async (orderPayload) => {
 };
 
 const captureOneTimeOrder = async (orderId) => {
-  
   try {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}/api/subscription/orders/${orderId}/capture`,
@@ -80,7 +75,6 @@ const captureOneTimeOrder = async (orderId) => {
 };
 
 const getPayPalClientToken = async () => {
-  
   try {
     const response = await axios.get(
       `${process.env.REACT_APP_API_URL}/api/subscription/client-token`,
@@ -93,6 +87,33 @@ const getPayPalClientToken = async () => {
   }
 };
 
+const createStripeSubscription = async (priceId, userId, email) => {
+  try {
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/subscription/create-checkout-session`,
+      { priceId, userId, email, mode: "subscription" },
+      getAuthHeaders(),
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in creating stripe subscription", error);
+    throw error;
+  }
+};
+
+const getStripeCheckoutSession = async (sessionId) => {
+  try {
+    const response = await axios.get(
+      `${process.env.REACT_APP_API_URL}/api/subscription/checkout-session/${sessionId}`,
+      getAuthHeaders()
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error getting stripe checkout session", error);
+    throw error;
+  }
+};
+
 export {
   createSubscription,
   confirmSubscription,
@@ -100,4 +121,6 @@ export {
   createOneTimeOrder,
   captureOneTimeOrder,
   getPayPalClientToken,
+  createStripeSubscription,
+  getStripeCheckoutSession
 };

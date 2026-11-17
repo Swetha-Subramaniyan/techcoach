@@ -114,7 +114,7 @@ const MindMapView = ({ onNodeSelect }) => {
                         >
                           <div className="node-content">
                             <strong>{group.name}</strong>
-                            <span className="badge">{group.decisions.length}</span>
+                            <span className="badges">{group.decisions.length}</span>
                           </div>
                           <span className="toggle-indicator">
                             {isExpanded ? '▾' : '▸'}
@@ -167,7 +167,7 @@ const MindMapView = ({ onNodeSelect }) => {
                         >
                           <div className="node-content">
                             <strong>{skillName}</strong>
-                            <span className="badge">{group.decisions.length}</span>
+                            <span className="badges">{group.decisions.length}</span>
                           </div>
                           <span className="toggle-indicator">
                             {isExpanded ? '▾' : '▸'}

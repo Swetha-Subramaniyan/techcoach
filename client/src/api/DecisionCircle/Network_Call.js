@@ -368,7 +368,7 @@ const postComment = async (groupId, comment, decisionId, biasTagIds = []) => {
         groupId,
         commentText: comment,
         decisionId,
-        biasTagIds
+        biasTagIds,
       },
       getAuthHeaders(),
     );
@@ -416,7 +416,12 @@ const postComment = async (groupId, comment, decisionId, biasTagIds = []) => {
 //     }
 // };
 
-const postShareWithComment = async (groupId, commentText, decisionId, biasTagIds = []) => {
+const postShareWithComment = async (
+  groupId,
+  commentText,
+  decisionId,
+  biasTagIds = [],
+) => {
   try {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}/group/comment`,
@@ -424,7 +429,7 @@ const postShareWithComment = async (groupId, commentText, decisionId, biasTagIds
         groupId,
         commentText,
         decisionId,
-        biasTagIds
+        biasTagIds,
       },
       getAuthHeaders(),
     );
@@ -467,7 +472,7 @@ const getWithComments = async (decisionId, groupId) => {
           groupId,
           decisionId,
         },
-      }
+      },
     );
 
     return response.data;
@@ -578,6 +583,25 @@ const sendTeamsDecisionCard = async (payload) => {
   }
 };
 
+const sendTeamsChannelDecisionCard = async (payload) => {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/teams/notify-channel-decision`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error sending Teams decision card", error);
+    throw error;
+  }
+};
+
 const sendTeamsCommentNotification = async (payload) => {
   const token = localStorage.getItem("token");
   try {
@@ -594,21 +618,20 @@ const sendTeamsCommentNotification = async (payload) => {
 };
 
 const getTeamsWebhookByGroupName = async (group_name) => {
-    try {
-        const response = await axios.get(
-            `${process.env.REACT_APP_API_URL}/group/teams-webhook`,
-            {
-                ...getAuthHeaders(),
-                params: { group_name }
-            }
-        );
+  try {
+    const response = await axios.get(
+      `${process.env.REACT_APP_API_URL}/group/teams-webhook`,
+      {
+        ...getAuthHeaders(),
+        params: { group_name },
+      },
+    );
 
-        return response.data;
-
-    } catch (error) {
-        console.error("Error fetching Teams webhook:", error);
-        throw error;
-    }
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching Teams webhook:", error);
+    throw error;
+  }
 };
 
 const getBiasTags = async () => {
@@ -636,6 +659,7 @@ export {
   // getSharedDecisionCircleDetails,
   getUserSharedDecisions,
   getdecisionSharedDecisionCirclebyuser,
+  sendTeamsChannelDecisionCard,
 
   // group namess
   postdecisionGroup,
@@ -658,5 +682,5 @@ export {
   sendTeamsDecisionCard,
   sendTeamsCommentNotification,
   getTeamsWebhookByGroupName,
-  getBiasTags
+  getBiasTags,
 };

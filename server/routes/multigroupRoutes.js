@@ -4,6 +4,7 @@ const multigroupController = require("../Controllers/multigroupController");
 const authMiddleware = require("../utils/AuthMiddleware");
 const createUserKey = require("../utils/CreateUserKey");
 
+
 router.use(authMiddleware);
 router.use(createUserKey);
 
@@ -26,6 +27,7 @@ router.post("/decisionCirclePostComment",multigroupController.decisionCirclePost
 router.post("/decisionCircleReplyComment",multigroupController.decisionCircleReplyComment);
 router.get("/sharedwithme",multigroupController.getdecisionSharedDecisionCirclebyuser);
 router.get("/sharedbyme",multigroupController.getUserSharedDecisions);
+
 
 
 module.exports = router;

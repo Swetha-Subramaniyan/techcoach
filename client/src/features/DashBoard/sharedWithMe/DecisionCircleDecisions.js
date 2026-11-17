@@ -33,6 +33,7 @@ import withAuth from "../../../utils/withAuth";
 import axios from "axios";
 import { getUserList } from "../../../api/User/Network_call";
 import { notifyTeamsChannel } from "../../../utils/teamsWebhook";
+import { renderCommentWithMentions } from "../../../utils/formatCommentsWithMentions";
 
 const SharedDecisionCircle = () => {
   const [sharedDecisionCircles, setSharedDecisionCircles] = useState([]);
@@ -52,7 +53,7 @@ const SharedDecisionCircle = () => {
   const [biasTags, setBiasTags] = useState([]);
   const [selectedBiasTags, setSelectedBiasTags] = useState({});
   const [editBiasTags, setEditBiasTags] = useState([]);
-
+  const [groupMembers, setGroupMembers] = useState({});
   const fetchSharedDecisionCircles = async () => {
     try {
       setIsLoading(true);
@@ -83,6 +84,37 @@ const SharedDecisionCircle = () => {
 
     fetchBiasTags();
   }, []);
+
+  const fetchGroupMembers = async () => {
+    try {
+      const membersData = await Promise.all(
+        sharedDecisionCircles.map(async (item) => {
+          const response = await getUsersForGroup(item.id);
+
+          return {
+            groupId: item.id,
+            members: response.members || [],
+          };
+        }),
+      );
+
+      const membersMap = {};
+
+      membersData.forEach(({ groupId, members }) => {
+        membersMap[groupId] = members;
+      });
+
+      setGroupMembers(membersMap);
+    } catch (error) {
+      console.error("Error fetching Decision Circle members:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (sharedDecisionCircles.length > 0) {
+      fetchGroupMembers();
+    }
+  }, [sharedDecisionCircles]);
 
   const handlePopoverClose = () => {
     setIsPopoverOpen(false);
@@ -140,6 +172,7 @@ const SharedDecisionCircle = () => {
         recipientEmails,
         commentText,
         item.group_name,
+        item.id,
       );
     } catch (error) {
       console.error("Teams notification failed:", error);
@@ -563,7 +596,10 @@ const SharedDecisionCircle = () => {
                                     variant="body1"
                                     className="sharedDecision-comment-text"
                                   >
-                                    {comment.comment}
+                                    {renderCommentWithMentions(
+                                      comment.comment,
+                                      groupMembers[item.id] || [],
+                                    )}
                                   </Typography>
 
                                   <Typography
@@ -625,6 +661,31 @@ const SharedDecisionCircle = () => {
                             )
                           }
                         />
+
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          mt={2}
+                          mb={1}
+                        >
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            Bias Tags
+                          </Typography>
+
+                          <a
+                            href="https://mahanakornpartners.com/the-effect-of-cognitive-bias-in-decision-making/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: "13px",
+                              color: "#1976d2",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Learn about cognitive bias
+                          </a>
+                        </Box>
 
                         <Autocomplete
                           multiple

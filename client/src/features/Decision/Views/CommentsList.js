@@ -15,6 +15,7 @@ const CommentsList = ({
   biasTags = [],
   replyBiasTags = {},
   onReplyBiasTagsChange,
+  members = [],
 }) => {
 
   if (!comments || comments.length === 0) {
@@ -43,6 +44,7 @@ const CommentsList = ({
             comment={c}
             isAuthor={isAuthor}
             onEdit={onEditComment}
+            members={members}
           >
             {showAuthorReplies && isMember && (
               <>
@@ -54,6 +56,7 @@ const CommentsList = ({
                       isAuthor
                       isReply
                       onEdit={onEditReply}
+                       members={members}
                     />
                     
                   </>
