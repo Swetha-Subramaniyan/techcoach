@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const getConnection = require("./models/database");
+const getConnection = require("./Models/database");
 
 function decryptOld(encryptedHex, key) {
 
