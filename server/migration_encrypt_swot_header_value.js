@@ -1,6 +1,6 @@
 // migrate-swot-stage.js
 const crypto = require("crypto");
-const getConnection = require("./models/database");
+const getConnection = require("./Models/database");
 
 const ALGORITHM = "aes-256-cbc";
 

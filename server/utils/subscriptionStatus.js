@@ -1,4 +1,4 @@
-const getConnection = require('../models/database');
+const getConnection = require('../Models/database');
 
 const isUserSubscribed = async (userId) => {
   const conn = await getConnection();
