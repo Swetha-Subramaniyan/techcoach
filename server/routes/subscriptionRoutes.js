@@ -7,7 +7,7 @@ const {
   captureOneTimeOrder,
   getClientToken,
 } = require("../Services/paypalService");
-const getConnection = require("../models/database");
+const getConnection = require("../Models/database");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const PRICE_IDS = {
   monthly: process.env.STRIPE_PRICE_MONTHLY || "price_1UaxuSLfSDvxyGCueinLkcd4",
