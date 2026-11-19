@@ -364,50 +364,6 @@ router.get("/checkout-session/:id", ensureAuth, async (req, res) => {
   }
 });
 
-router.post("/create-portal-session", ensureAuth, async (req, res) => {
-  let conn;
-
-  try {
-    conn = await getConnection();
-
-    const rows = await conn.query(
-      `SELECT stripe_customer_id, subscription_id
-       FROM techcoach_lite.user_subscription
-       WHERE user_id = ?
-         AND mode_of_payment = 'STRIPE'
-       ORDER BY updated_at DESC
-       LIMIT 1`,
-      [req.user.id],
-    );
-
-    if (!rows.length || !rows[0].stripe_customer_id) {
-      return res.status(404).json({
-        error: "Stripe customer not found",
-      });
-    }
-
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: rows[0].stripe_customer_id,
-
-      configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID,
-
-      return_url: `${process.env.CLIENT_URL}/profile`,
-    });
-
-    return res.json({
-      url: portalSession.url,
-    });
-  } catch (err) {
-    console.error("Stripe portal session error:", err);
-
-    return res.status(500).json({
-      error: "Failed to create Stripe portal session",
-    });
-  } finally {
-    if (conn) conn.release();
-  }
-});
-
 router.post("/create-cancellation-session", ensureAuth, async (req, res) => {
   let conn;
 
@@ -446,7 +402,7 @@ router.post("/create-cancellation-session", ensureAuth, async (req, res) => {
     if (cancellationScheduled) {
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: `${process.env.CLIENT_URL}/profile?stripe=renewed`,
+        return_url: `${process.env.CLIENT_URL}/profile`,
       });
 
       return res.json({

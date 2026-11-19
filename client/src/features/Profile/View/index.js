@@ -31,7 +31,6 @@ import {
 } from "../../../api/User/Network_call";
 import {
   createStripeCancellationSession,
-  createStripePortalSession,
   createStripeSubscription,
   createSubscription,
   getStripeCheckoutSession,
@@ -457,7 +456,7 @@ const Profile = () => {
               </button>
             )}
 
-            {subscription.cancellationEffectiveAt && (
+            {subscription.isSubscribed && subscription.cancelAtPeriodEnd && (
               <div className="subscription-row">
                 <span>Cancellation scheduled</span>
                 <span>
@@ -480,15 +479,6 @@ const Profile = () => {
                     : "Manage / Cancel Subscription"}
                 </button>
               )}
-
-            {!subscription.isSubscribed && (
-              <button
-                className="subscribe-btn"
-                onClick={() => setOpenPaymentModal(true)}
-              >
-                Create New Subscription
-              </button>
-            )}
 
             <Dialog
               open={openPaymentModal}

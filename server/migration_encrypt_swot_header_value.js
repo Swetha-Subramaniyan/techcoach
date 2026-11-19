@@ -1,4 +1,4 @@
-// migrate-swot-stage.js
+// migrate-swot-stage.js 
 const crypto = require("crypto");
 const getConnection = require("./Models/database");
 
@@ -82,4 +82,17 @@ async function stage() {
   }
 }
 
-stage();
+stage(); 
+
+
+/* 
+Failed SWOT Header Value
+
+ 402,403,681,682,683,684,685,
+    691,692,693,694,695,
+    801,802,803,804,805,806,
+    900,901,902,903,904,
+    910,911,912,913,914,
+    987,988,989,1026,1096,1098,
+    1110,1112,1114,1116,1118,
+    1147,1150,1153,1442,1449,1456,1477 */

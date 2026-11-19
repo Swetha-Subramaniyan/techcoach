@@ -51,9 +51,8 @@ const saveStripeSubscription = async ({
 
     const subscriptionItem = subscription.items?.data?.[0];
 
-    const cancelAtPeriodEnd = subscription.cancel_at_period_end ? 1 : 0;
+    const cancelAtPeriodEnd = subscription.cancel_at ? 1 : 0;
 
-    // Get the latest invoice
     let latestInvoice = subscription.latest_invoice;
 
     if (typeof latestInvoice === "string") {
@@ -62,8 +61,6 @@ const saveStripeSubscription = async ({
     const cancellationRequestedAt = subscription.canceled_at
       ? convertStripeDate(subscription.canceled_at)
       : null;
-    // If a renewal invoice is still unpaid, use its billing period end.
-    // Otherwise, use the subscription item's next period end.
     const hasPendingRenewalInvoice =
       latestInvoice &&
       latestInvoice.billing_reason === "subscription_cycle" &&

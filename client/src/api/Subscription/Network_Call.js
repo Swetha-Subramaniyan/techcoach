@@ -99,26 +99,8 @@ const createStripeSubscription = async (priceId, userId, email) => {
     console.error("Error in creating stripe subscription", error);
     throw error;
   }
-};
+};   
 
-const createStripePortalSession = async () => {
-  try {
-    const response = await axios.post(
-      `${process.env.REACT_APP_API_URL}/api/subscription/create-portal-session`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      },
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error("Error in creating stripe subscription", error);
-    throw error;
-  }
-};
 
 const createStripeCancellationSession = async () => {
   try {
@@ -157,6 +139,5 @@ export {
   getPayPalClientToken,
   createStripeSubscription,
   getStripeCheckoutSession,
-  createStripePortalSession,
   createStripeCancellationSession
 };
