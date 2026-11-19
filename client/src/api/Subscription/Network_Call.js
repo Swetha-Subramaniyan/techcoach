@@ -99,13 +99,29 @@ const createStripeSubscription = async (priceId, userId, email) => {
     console.error("Error in creating stripe subscription", error);
     throw error;
   }
+};   
+
+
+const createStripeCancellationSession = async () => {
+  try {
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/subscription/create-cancellation-session`,
+      {},
+      getAuthHeaders()
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error creating Stripe cancellation session", error);
+    throw error;
+  }
 };
 
 const getStripeCheckoutSession = async (sessionId) => {
   try {
     const response = await axios.get(
       `${process.env.REACT_APP_API_URL}/api/subscription/checkout-session/${sessionId}`,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data;
   } catch (error) {
@@ -122,5 +138,6 @@ export {
   captureOneTimeOrder,
   getPayPalClientToken,
   createStripeSubscription,
-  getStripeCheckoutSession
+  getStripeCheckoutSession,
+  createStripeCancellationSession
 };

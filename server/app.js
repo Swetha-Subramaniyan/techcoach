@@ -29,9 +29,16 @@ startTeamsSubscriptionCron();
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(express.json({ limit: "10mb" }));
 app.use(cors({ origin: "*" }));
 app.use(morgan('tiny'));
+
+app.use(
+  "/graphAPI/webhook",
+  express.raw({ type: "application/json" })
+);
+
+app.use(express.json({ limit: "10mb" }));
+
 
 app.use('/graphAPI',graphAPIRoutes);
 

@@ -30,6 +30,7 @@ import {
   getUserList,
 } from "../../../api/User/Network_call";
 import {
+  createStripeCancellationSession,
   createStripeSubscription,
   createSubscription,
   getStripeCheckoutSession,
@@ -97,34 +98,50 @@ const Profile = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     const stripeStatus = params.get("stripe");
     const sessionId = params.get("session_id");
 
-    if (stripeStatus === "success") {
-      const verify = async () => {
-        try {
+    const verifyStripeStatus = async () => {
+      try {
+        if (stripeStatus === "success") {
           if (sessionId) {
             const info = await getStripeCheckoutSession(sessionId);
+
             if (info.paymentStatus === "paid" || info.status === "complete") {
               toast.success("Stripe subscription activated!");
             }
           }
-          const subResp = await getSubscriptionStatus();
-          setSubscription(subResp);
-        } catch (e) {
-          console.error("Stripe verify error", e);
-        } finally {
+        }
+
+        if (stripeStatus === "cancelled") {
+          toast.success("Subscription cancellation scheduled!");
+        }
+
+        if (stripeStatus === "success" || stripeStatus === "cancelled") {
+          const updated = await getSubscriptionStatus();
+          setSubscription(updated);
+        }
+
+        if (stripeStatus === "cancel") {
+          toast.info("Stripe checkout cancelled.");
+        }
+      } catch (error) {
+        console.error("Stripe verification error:", error);
+        toast.error("Unable to refresh subscription details.");
+      } finally {
+        if (stripeStatus) {
           window.history.replaceState(
             {},
             document.title,
             window.location.pathname,
           );
         }
-      };
-      verify();
-    } else if (stripeStatus === "cancel") {
-      toast.info("Stripe checkout cancelled.");
-      window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    if (stripeStatus) {
+      verifyStripeStatus();
     }
   }, []);
 
@@ -303,7 +320,8 @@ const Profile = () => {
     try {
       setStripeLoading(true);
       const res = await createStripeSubscription(
-        process.env.REACT_APP_STRIPE_PRICE_MONTHLY || 'price_1UaxuSLfSDvxyGCueinLkcd4',
+        process.env.REACT_APP_STRIPE_PRICE_MONTHLY ||
+          "price_1UaxuSLfSDvxyGCueinLkcd4",
         userData?.user_id || "",
         userData?.email || "",
       );
@@ -314,6 +332,32 @@ const Profile = () => {
         err.response?.data?.error || "Failed to start Stripe checkout",
       );
       setStripeLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const response = await createStripeCancellationSession();
+
+      if (response.resumed) {
+        const updated = await getSubscriptionStatus();
+
+        setSubscription(updated);
+
+        toast.success("Subscription renewed successfully!");
+
+        return;
+      }
+
+      if (response.url) {
+        window.location.assign(response.url);
+      }
+    } catch (err) {
+      console.error("Stripe subscription management error:", err);
+
+      toast.error(
+        err.response?.data?.error || "Unable to manage Stripe subscription",
+      );
     }
   };
 
@@ -411,6 +455,30 @@ const Profile = () => {
                 Upgrade / Subscribe
               </button>
             )}
+
+            {subscription.isSubscribed && subscription.cancelAtPeriodEnd && (
+              <div className="subscription-row">
+                <span>Cancellation scheduled</span>
+                <span>
+                  Your subscription will end on{" "}
+                  {new Date(
+                    subscription.cancellationEffectiveAt,
+                  ).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+
+            {subscription.isSubscribed &&
+              subscription.modeOfPayment === "STRIPE" && (
+                <button
+                  className="subscribe-btn"
+                  onClick={handleManageSubscription}
+                >
+                  {subscription.cancelAtPeriodEnd
+                    ? "Reactivate Subscription"
+                    : "Manage / Cancel Subscription"}
+                </button>
+              )}
 
             <Dialog
               open={openPaymentModal}
@@ -510,7 +578,7 @@ const Profile = () => {
                       borderRadius: 2,
                       p: 1.5,
                       mb: 1.5,
-                      mt:1.5,
+                      mt: 1.5,
                       cursor: "pointer",
                     }}
                     onClick={() => setPaymentType("stripe")}
