@@ -221,10 +221,11 @@ const getAllProfileLink = async (req, res) => {
     }
 
     const rows = await conn.query(
-      `SELECT 
+       `SELECT 
           dh.decision_id,
           d.decision_name,
           v.id AS v_id,
+          h.header_id,
           h.header_name,
           v.header_value,
           h.type_of_profile
@@ -235,7 +236,8 @@ const getAllProfileLink = async (req, res) => {
           ON dh.v_id = v.id
        JOIN techcoach_lite.techcoach_profile_swot_headers h 
           ON v.header_id = h.header_id
-       WHERE d.user_id = ?`,
+       WHERE d.user_id = ?
+         AND h.type_of_profile = 'Profile'`,
       [userId]
     );
 

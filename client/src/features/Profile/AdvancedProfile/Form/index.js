@@ -177,238 +177,307 @@
 
 // export default AdvancedProfileTable;
 
-
-import React, { useEffect, useState } from 'react';
-import { IoIosAddCircleOutline, IoIosRemoveCircleOutline } from "react-icons/io";
-import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
-import withAuth from '../../../../utils/withAuth';
-import { getAdvancedProfile, postAdvancedProfile, putAdvancedProfile } from '../../../../api/AdvancedProfile/Network_Call';
+import React, { useEffect, useState } from "react";
+import {
+  IoIosAddCircleOutline,
+  IoIosRemoveCircleOutline,
+} from "react-icons/io";
+import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
+import withAuth from "../../../../utils/withAuth";
+import {
+  getAdvancedProfile,
+  postAdvancedProfile,
+  putAdvancedProfile,
+} from "../../../../api/AdvancedProfile/Network_Call";
 
 const AdvancedProfileForm = () => {
-    const [formsData, setFormsData] = useState({
-        goals: [''],
-        values: [''],
-        resolutions: [''],
-        constraints: [''],
-        otherFactors: ['']
-    });
+  const [formsData, setFormsData] = useState({
+    goals: [""],
+    values: [""],
+    resolutions: [""],
+    constraints: [""],
+    otherFactors: [""],
+  });
 
-    const navigate = useNavigate();
-    const [isNewAdvancedProfile, setIsNewAdvancedProfile] = useState(true);
-    const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [isNewAdvancedProfile, setIsNewAdvancedProfile] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-    const displayNames = {
-        goals: "Goals",
-        values: "Values",
-        resolutions: "Resolutions",
-        constraints: "Constraints",
-        otherFactors: "Other Factors"
-    };
+  const displayNames = {
+    goals: "Goals",
+    values: "Values",
+    resolutions: "Resolutions",
+    constraints: "Constraints",
+    otherFactors: "Other Factors",
+  };
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            getAdvancedProfile()
-                .then((response) => {
-                    const { goals, values, resolutions, constraints, otherfactors } = response;
-                    if (response) {
-                        setFormsData({
-                            goals: goals ? goals.map(item => item.value) : [''],
-                            values: values ? values.map(item => item.value) : [''],
-                            resolutions: resolutions ? resolutions.map(item => item.value) : [''],
-                            constraints: constraints ? constraints.map(item => item.value) : [''],
-                            otherFactors: otherfactors ? otherfactors.map(item => item.value) : ['']
-                        });
-                        setIsNewAdvancedProfile(false);
-                    } else {
-                        throw new Error('Data format is incorrect');
-                    }
-                })
-                .catch((err) => {
-                    if (err.response) {
-                        if (err.response.status === 404) {
-                            toast.info('No existing Advanced Profile found. Please create a new Advanced Profile.');
-                            setIsNewAdvancedProfile(true);
-                        } else {
-                            console.error('Error response:', err.response);
-                            toast.error(`Error: ${err.response.statusText}`);
-                        }
-                    } else {
-                        console.error('Error response:', err);
-                        toast.error('An error occurred. Please try again.');
-                    }
-                });
-        } else {
-            toast.error('No token found. Please log in.');
-        }
-    }, []);
-
-    const handleAdd = (type) => {
-        setFormsData((prevData) => ({
-            ...prevData,
-            [type]: [...prevData[type], '']
-        }));
-    };
-
-    const handleRemove = (type, index) => {
-        setFormsData((prevData) => ({
-            ...prevData,
-            [type]: prevData[type].filter((_, i) => i !== index)
-        }));
-    };
-
-    const handleChange = (type, index, value) => {
-        setFormsData((prevData) => ({
-            ...prevData,
-            [type]: prevData[type].map((item, i) => (i === index ? value : item))
-        }));
-    };
-
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-    //     setLoading(true);
-    //     const token = localStorage.getItem('token');
-    //     const { goals, values, resolutions, constraints, otherFactors } = formsData;
-    //     const data = { goals, values, resolutions, constraints, other_factors: otherFactors };
-
-    //     try {
-    //         if (isNewAdvancedProfile) {
-    //             await axios.post(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`
-    //                 }
-    //             });
-    //         } else {
-    //             await axios.put(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`
-    //                 }
-    //             });
-    //         }
-    //         setFormsData({
-    //             goals: [''],
-    //             values: [''],
-    //             resolutions: [''],
-    //             constraints: [''],
-    //             otherFactors: ['']
-    //         });
-    //         toast.success('Data submitted successfully!');
-    //         navigate('/advancedProfile');
-    //     } catch (error) {
-    //         console.error('Error submitting data:', error);
-    //         toast.error('An error occurred. Please try again.');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-      // Modified handleSubmit to add validation
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        const { goals, values, resolutions, constraints, otherFactors } = formsData;
-
-        // Validate required inputs
-        const fieldsToValidate = { goals, values, resolutions, constraints, otherFactors };
-        for (const [key, values] of Object.entries(fieldsToValidate)) {
-            for (let val of values) {
-                if (!val.trim()) {
-                    toast.error(`${displayNames[key]} cannot be empty.`); //  Empty check
-                    setLoading(false);
-                    return;
-                }
-            }
-        }
-
-        //  Format for backend (otherFactors becomes other_factors)
-        const data = { goals, values, resolutions, constraints, other_factors: otherFactors };
-
-        try {
-            if (isNewAdvancedProfile) {
-                await postAdvancedProfile(data);
-            } else {
-                await putAdvancedProfile(data)
-            }
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      getAdvancedProfile()
+        .then((response) => {
+          const { goals, values, resolutions, constraints, otherfactors } =
+            response;
+          if (response) {
             setFormsData({
-                goals: [''],
-                values: [''],
-                resolutions: [''],
-                constraints: [''],
-                otherFactors: ['']
+              goals: goals ? goals.map((item) => item.value) : [""],
+              values: values ? values.map((item) => item.value) : [""],
+              resolutions: resolutions
+                ? resolutions.map((item) => item.value)
+                : [""],
+              constraints: constraints
+                ? constraints.map((item) => item.value)
+                : [""],
+              otherFactors: otherfactors
+                ? otherfactors.map((item) => item.value)
+                : [""],
             });
-            toast.success('Data submitted successfully!');
-            navigate('/profile/advanced-profile');
-        } catch (error) {
-            console.error('Error submitting data:', error);
-            toast.error('An error occurred. Please try again.');
-        } finally {
-            setLoading(false);
+            setIsNewAdvancedProfile(false);
+          } else {
+            throw new Error("Data format is incorrect");
+          }
+        })
+        .catch((err) => {
+          if (err.response) {
+            if (err.response.status === 404) {
+              toast.info(
+                "No existing Advanced Profile found. Please create a new Advanced Profile.",
+              );
+              setIsNewAdvancedProfile(true);
+            } else {
+              console.error("Error response:", err.response);
+              toast.error(`Error: ${err.response.statusText}`);
+            }
+          } else {
+            console.error("Error response:", err);
+            toast.error("An error occurred. Please try again.");
+          }
+        });
+    } else {
+      toast.error("No token found. Please log in.");
+    }
+  }, []);
+
+  const handleAdd = (type) => {
+    setFormsData((prevData) => ({
+      ...prevData,
+      [type]: [...prevData[type], ""],
+    }));
+  };
+
+  const handleRemove = (type, index) => {
+    setFormsData((prevData) => ({
+      ...prevData,
+      [type]: prevData[type].filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleChange = (type, index, value) => {
+    setFormsData((prevData) => ({
+      ...prevData,
+      [type]: prevData[type].map((item, i) => (i === index ? value : item)),
+    }));
+  };
+
+  // const handleSubmit = async (e) => {
+  //     e.preventDefault();
+  //     setLoading(true);
+  //     const token = localStorage.getItem('token');
+  //     const { goals, values, resolutions, constraints, otherFactors } = formsData;
+  //     const data = { goals, values, resolutions, constraints, other_factors: otherFactors };
+
+  //     try {
+  //         if (isNewAdvancedProfile) {
+  //             await axios.post(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
+  //                 headers: {
+  //                     Authorization: `Bearer ${token}`
+  //                 }
+  //             });
+  //         } else {
+  //             await axios.put(`${process.env.REACT_APP_API_URL}/api/data/advanced`, data, {
+  //                 headers: {
+  //                     Authorization: `Bearer ${token}`
+  //                 }
+  //             });
+  //         }
+  //         setFormsData({
+  //             goals: [''],
+  //             values: [''],
+  //             resolutions: [''],
+  //             constraints: [''],
+  //             otherFactors: ['']
+  //         });
+  //         toast.success('Data submitted successfully!');
+  //         navigate('/advancedProfile');
+  //     } catch (error) {
+  //         console.error('Error submitting data:', error);
+  //         toast.error('An error occurred. Please try again.');
+  //     } finally {
+  //         setLoading(false);
+  //     }
+  // };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const { goals, values, resolutions, constraints, otherFactors } = formsData;
+
+    const fieldsToValidate = {
+      goals,
+      values,
+      resolutions,
+      constraints,
+      otherFactors,
+    };
+    for (const [key, values] of Object.entries(fieldsToValidate)) {
+      for (let val of values) {
+        if (!val.trim()) {
+          toast.error(`${displayNames[key]} cannot be empty.`); //  Empty check
+          setLoading(false);
+          return;
         }
+      }
+    }
+
+    const data = {
+      goals,
+      values,
+      resolutions,
+      constraints,
+      other_factors: otherFactors,
     };
 
-    return (
-        <div className='AdvancedTable'>
-            <div className='main-Advancedtable'>
-                <h3>Advanced - Profile Details</h3>
-                <div className='advanced-table'>
-                    <form onSubmit={handleSubmit}>
-                        {Object.keys(formsData).map((type) => (
-                            <div key={type} className='form-section'>
-                               
-<div className='section-header'>
-  <h6>
-    {displayNames[type]} <span style={{ color: 'red' }}>*</span>
-  </h6>
-</div>
-                                <div className='form-section-body'>
-                                    {Array.isArray(formsData[type]) && formsData[type].length > 0 ? (
-                                        formsData[type].map((item, index) => (
-                                            <div key={index} className='input-row'>
-                                                                               
-<input
-  id={`${type}-${index}`}
-  type='text'
-  value={item}
-  placeholder={`Enter your ${displayNames[type].toLowerCase()}...`}
-  onChange={(e) => handleChange(type, index, e.target.value)}
-/>
+    try {
+      if (isNewAdvancedProfile) {
+        await postAdvancedProfile(data);
+      } else {
+        await putAdvancedProfile(data);
+      }
+      setFormsData({
+        goals: [""],
+        values: [""],
+        resolutions: [""],
+        constraints: [""],
+        otherFactors: [""],
+      });
+      toast.success("Data submitted successfully!");
+      navigate("/profile/advanced-profile");
+    } catch (error) {
+      console.error("Error submitting data:", error);
 
-                                                <div className='action-icons'>
-                                                    <IoIosAddCircleOutline
-                                                        className='icons'
-                                                        onClick={() => handleAdd(type)}
-                                                    />
-                                                    {formsData[type].length > 1 && (
-                                                        <IoIosRemoveCircleOutline
-                                                            className='icons'
-                                                            onClick={() => handleRemove(type, index)}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div> No data available </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                        <button
-                            type='submit'
-                            className='save-AdvancedProfilebutton'
-                            disabled={loading}>
-                            {isNewAdvancedProfile ? (loading ? 'Saving...' : 'Save') : (loading ? 'Updating...' : 'Update')}
-                        </button>
-                    </form>
+      const res = error?.response;
+
+      if (res?.status === 409 && res.data?.error === "LINKED_VALUES") {
+        const linked = res.data.linked || [];
+
+        const byHeader = {}; 
+
+        for (const l of linked) {
+          const header = l.header_name || res.data.header || "Value";
+          const value = (l.v_header || "").trim();
+          const decision = l.decision_name || `Decision #${l.decision_id}`;
+
+          if (!byHeader[header]) {
+            byHeader[header] = { values: new Set(), decisions: new Set() };
+          }
+          if (value) byHeader[header].values.add(value);
+          if (decision) byHeader[header].decisions.add(decision);
+        }
+
+        const parts = Object.entries(byHeader).map(
+          ([header, { values, decisions }]) => {
+            const valTxt = [...values].join(", ");
+            const decTxt = [...decisions].join(", ");
+            return `${header}: ${valTxt || "(value)"} — linked to: ${decTxt}`;
+          },
+        );
+
+        toast.error(`Cannot remove linked value(s). ${parts.join(" | ")}`, {
+          autoClose: 10000,
+        });
+      } else {
+        toast.error("An error occurred. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="AdvancedTable">
+      <div className="main-Advancedtable">
+        <h3>Advanced - Profile Details</h3>
+        <div className="advanced-table">
+          <form onSubmit={handleSubmit}>
+            {Object.keys(formsData).map((type) => (
+              <div key={type} className="form-section">
+                <div className="section-header">
+                  <h6>
+                    {displayNames[type]} <span style={{ color: "red" }}>*</span>
+                  </h6>
                 </div>
-                <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
-            </div>
+                <div className="form-section-body">
+                  {Array.isArray(formsData[type]) &&
+                  formsData[type].length > 0 ? (
+                    formsData[type].map((item, index) => (
+                      <div key={index} className="input-row">
+                        <input
+                          id={`${type}-${index}`}
+                          type="text"
+                          value={item}
+                          placeholder={`Enter your ${displayNames[type].toLowerCase()}...`}
+                          onChange={(e) =>
+                            handleChange(type, index, e.target.value)
+                          }
+                        />
+
+                        <div className="action-icons">
+                          <IoIosAddCircleOutline
+                            className="icons"
+                            onClick={() => handleAdd(type)}
+                          />
+                          {formsData[type].length > 1 && (
+                            <IoIosRemoveCircleOutline
+                              className="icons"
+                              onClick={() => handleRemove(type, index)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div> No data available </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button
+              type="submit"
+              className="save-AdvancedProfilebutton"
+              disabled={loading}
+            >
+              {isNewAdvancedProfile
+                ? loading
+                  ? "Saving..."
+                  : "Save"
+                : loading
+                  ? "Updating..."
+                  : "Update"}
+            </button>
+          </form>
         </div>
-    );
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default withAuth(AdvancedProfileForm);

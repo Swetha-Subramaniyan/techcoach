@@ -17,7 +17,7 @@ const getUserList = async () => {
 
 const postAdvancedProfile = async ({
   goals,
-  values,
+  values,           
   resolutions,
   constraints,
   other_factors,

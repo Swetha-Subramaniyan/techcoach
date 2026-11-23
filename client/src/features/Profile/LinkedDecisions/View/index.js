@@ -1,16 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 import { TiDelete } from "react-icons/ti";
-import { toast, ToastContainer } from 'react-toastify';
-import withAuth from '../../../../utils/withAuth';
-import BubbleChart from './BubbleChart';
-import MindMapView from './MindMapChart';
-import { deleteProfileLink, deleteSkillLink, getAllProfileLink, getAllSkillLink } from '../../../../api/Decision_Link/Network_Call';
+import { toast, ToastContainer } from "react-toastify";
+import withAuth from "../../../../utils/withAuth";
+import BubbleChart from "./BubbleChart";
+import MindMapView from "./MindMapChart";
+import {
+  deleteProfileLink,
+  deleteSkillLink,
+  getAllProfileLink,
+  getAllSkillLink,
+  getAllAdvancedProfileLink,
+} from "../../../../api/Decision_Link/Network_Call";
 
 const GetLink = () => {
   const [profiles, setProfiles] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [advancedProfiles, setAdvancedProfiles] = useState([]);
   const [filteredData, setFilteredData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,28 +27,39 @@ const GetLink = () => {
 
   const fetchProfiles = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await getAllProfileLink();
       setProfiles(response.profiles);
     } catch (err) {
-      console.error('Error fetching profiles:', err);
+      console.error("Error fetching profiles:", err);
+    }
+  };
+
+  const fetchAdvancedProfiles = async () => {
+    try {
+      const response = await getAllAdvancedProfileLink();
+      setAdvancedProfiles(response.profiles);
+    } catch (err) {
+      console.error("Error fetching profiles:", err);
     }
   };
 
   const fetchSkills = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await getAllSkillLink();
       setSkills(response.skills);
     } catch (err) {
-      console.error('Error fetching skills:', err);
+      console.error("Error fetching skills:", err);
     }
   };
 
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true);
-      await Promise.all([fetchProfiles(), fetchSkills()]);
+      await Promise.all([
+        fetchProfiles(),
+        fetchSkills(),
+        fetchAdvancedProfiles(),
+      ]);
       setLoading(false);
     };
     loadAll();
@@ -52,52 +70,70 @@ const GetLink = () => {
     return profiles.filter(
       (profile) =>
         profile.header_name === filteredData.header_name &&
-        profile.header_value === filteredData.header_value
+        profile.header_value === filteredData.header_value,
     );
   };
 
   const filterSkills = () => {
     if (!filteredData) return skills;
-    return skills.filter((skill) => skill.skill_name === filteredData.skill_name);
+    return skills.filter(
+      (skill) => skill.skill_name === filteredData.skill_name,
+    );
+  };
+
+  const filterAdvancedProfiles = () => {
+    if (!filteredData) return advancedProfiles;
+    return advancedProfiles.filter(
+      (profile) => profile.decision_id === filteredData.decision_id,
+    );
   };
 
   const handleDeleteSwot = async (decision_id) => {
-    if (window.confirm('Are you sure that you want to delete this decision-link?')) {
+    if (
+      window.confirm("Are you sure that you want to delete this decision-link?")
+    ) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         await deleteProfileLink(decision_id);
-        toast.success('Decision-SWOT-link deleted successfully');
+        toast.success("Decision-SWOT-link deleted successfully");
         fetchProfiles();
         setFilteredData(null);
       } catch (error) {
-        console.error('Error deleting decision-link:', error);
-        toast.error('An error occurred while deleting the decision-link');
+        console.error("Error deleting decision-link:", error);
+        toast.error("An error occurred while deleting the decision-link");
       }
     }
   };
 
   const handleDeleteSkill = async (decision_id) => {
-    if (window.confirm('Are you sure that you want to delete this decision-link?')) {
+    if (
+      window.confirm("Are you sure that you want to delete this decision-link?")
+    ) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         await deleteSkillLink(decision_id);
-        toast.success('Decision-Skill-link deleted successfully');
+        toast.success("Decision-Skill-link deleted successfully");
         fetchSkills();
         setFilteredData(null);
       } catch (error) {
-        console.error('Error deleting decision-link:', error);
-        toast.error('An error occurred while deleting the decision-link');
+        console.error("Error deleting decision-link:", error);
+        toast.error("An error occurred while deleting the decision-link");
       }
     }
   };
 
   const getSwotClass = (headerName) => {
     switch (headerName) {
-      case 'Strength': return 'strength';
-      case 'Weakness': return 'weakness';
-      case 'Opportunity': return 'opportunity';
-      case 'Threat': return 'threat';
-      default: return 'attitude';
+      case "Strength":
+        return "strength";
+      case "Weakness":
+        return "weakness";
+      case "Opportunity":
+        return "opportunity";
+      case "Threat":
+        return "threat";
+      default:
+        return "attitude";
     }
   };
 
@@ -119,10 +155,16 @@ const GetLink = () => {
       <div className="swot-container">
         <div className="swot-header">
           <div>
-            <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "var(--font-size-lg)",
+                fontWeight: 700,
+              }}
+            >
               Profiles
             </h3>
-            <p className="swot-desc" style={{ marginTop: 'var(--space-sm)' }}>
+            <p className="swot-desc" style={{ marginTop: "var(--space-sm)" }}>
               Your decision links grouped by SWOT profile categories.
             </p>
           </div>
@@ -144,13 +186,24 @@ const GetLink = () => {
                 <div className="profile-line">
                   <strong>SWOT value:</strong> {profile.header_value}
                 </div>
-                <div className="profile-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  className="profile-line"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <span>
                     <strong>Decision:</strong> {profile.decision_name}
                   </span>
                   <TiDelete
                     className="fs-4"
-                    style={{ cursor: 'pointer', color: 'var(--danger)', flexShrink: 0 }}
+                    style={{
+                      cursor: "pointer",
+                      color: "var(--danger)",
+                      flexShrink: 0,
+                    }}
                     onClick={() => handleDeleteSwot(profile.decision_id)}
                     title="Delete link"
                   />
@@ -164,10 +217,77 @@ const GetLink = () => {
       <div className="swot-container">
         <div className="swot-header">
           <div>
-            <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "var(--font-size-lg)",
+                fontWeight: 700,
+              }}
+            >
+              Advanced Profiles
+            </h3>
+            <p className="swot-desc" style={{ marginTop: "var(--space-sm)" }}>
+              Your decision links grouped by advanced profile categories.
+            </p>
+          </div>
+        </div>
+
+        {filterAdvancedProfiles().length === 0 ? (
+          <div className="no-profile-data">
+            No advanced profile links found.
+          </div>
+        ) : (
+          <div className="swot-grid">
+            {filterAdvancedProfiles().map((profile, index) => (
+              <div
+                key={index}
+                className={`swot-card ${getSwotClass(profile.header_name)}`}
+              >
+                <h4>{profile.header_name}</h4>
+                <div className="profile-line">
+                  <strong>Value:</strong> {profile.header_value}
+                </div>
+                <div
+                  className="profile-line"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    <strong>Decision:</strong> {profile.decision_name}
+                  </span>
+                  <TiDelete
+                    className="fs-4"
+                    style={{
+                      cursor: "pointer",
+                      color: "var(--danger)",
+                      flexShrink: 0,
+                    }}
+                    onClick={() => handleDeleteSwot(profile.decision_id)}
+                    title="Delete link"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="swot-container">
+        <div className="swot-header">
+          <div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "var(--font-size-lg)",
+                fontWeight: 700,
+              }}
+            >
               Soft Skills
             </h3>
-            <p className="swot-desc" style={{ marginTop: 'var(--space-sm)' }}>
+            <p className="swot-desc" style={{ marginTop: "var(--space-sm)" }}>
               Your decision links associated with soft skills.
             </p>
           </div>
@@ -182,14 +302,22 @@ const GetLink = () => {
                 <h4>{skill.skill_name}</h4>
                 <div
                   className="profile-line"
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
                   <span>
                     <strong>Decision:</strong> {skill.decision_name}
                   </span>
                   <TiDelete
                     className="fs-4"
-                    style={{ cursor: 'pointer', color: 'var(--danger)', flexShrink: 0 }}
+                    style={{
+                      cursor: "pointer",
+                      color: "var(--danger)",
+                      flexShrink: 0,
+                    }}
                     onClick={() => handleDeleteSkill(skill.decision_id)}
                     title="Delete link"
                   />
@@ -202,7 +330,11 @@ const GetLink = () => {
 
       <div className="profile-actions-container">
         <div className="action-buttons">
-          <Link to="/decision" className="action-btn download-btn" style={{ textDecoration: 'none' }}>
+          <Link
+            to="/decision"
+            className="action-btn download-btn"
+            style={{ textDecoration: "none" }}
+          >
             ← Go back &amp; Add Decisions
           </Link>
         </div>
