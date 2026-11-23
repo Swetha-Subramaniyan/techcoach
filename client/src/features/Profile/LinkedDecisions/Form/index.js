@@ -7,6 +7,7 @@ import { IoIosInformationCircle } from "react-icons/io";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
+  postAdvancedProfileLink,
   postProfileLink,
   postSkillLink,
 } from "../../../../api/Decision_Link/Network_Call";
@@ -14,7 +15,6 @@ import { getProfile } from "../../../../api/User/Network_call";
 import { getAllSkill } from "../../../../api/Skill/Network_Call";
 import {
   getAdvancedProfile,
-  postAdvancedProfile,
 } from "../../../../api/AdvancedProfile/Network_Call";
 
 const CheckboxGroup = ({
@@ -295,10 +295,10 @@ const AddLink = () => {
 
   const handleAdvancedProfileSubmit = async () => {
     try {
-      await postAdvancedProfile({
-        decision_id: id,
-        v_ids: selectedAdvancedProfiles,
-      });
+      await postAdvancedProfileLink(
+         id,
+         selectedAdvancedProfiles,
+      );
       toast.success("Advanced profile links saved");
       navigate("/profile/linked-decision");
     } catch (err) {

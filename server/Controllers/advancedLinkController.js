@@ -1,6 +1,49 @@
 const getConnection = require('../Models/database');
 const crypto = require('crypto');
 
+
+const ALGORITHM = "aes-256-cbc";
+
+const getSecureKey = (keyString) => {
+  return crypto
+    .createHash("sha256")
+    .update(String(keyString))
+    .digest("base64")
+    .substr(0, 32);
+};
+
+const decryptText = (text, userKey) => {
+  if (!text || typeof text !== "string") {
+    return null;
+  }
+
+  if (text.includes(":")) {
+    try {
+      const key = getSecureKey(userKey);
+      const textParts = text.split(":");
+      const iv = Buffer.from(textParts.shift(), "hex");
+      const encryptedText = Buffer.from(textParts.join(":"), "hex");
+      const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(key), iv);
+      let decrypted = decipher.update(encryptedText);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      return decrypted.toString();
+    } catch (error) {
+      console.error("Failed to decrypt new format data:", error);
+      return null;
+    }
+  } else {
+    try {
+      const decipher = crypto.createDecipher("aes-256-cbc", userKey);
+      let decrypted = decipher.update(text, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      return decrypted;
+    } catch (error) {
+      console.error("Failed to decrypt old format data:", error);
+      return null;
+    }
+  }
+};
+
 const postAdvancedProfile = async (req,res) =>{
     const { decision_id, v_ids} = req.body;
     let conn;
@@ -62,42 +105,35 @@ const getAllAdvancedProfileLink = async (req, res) => {
         }
 
         const rows = await conn.query(
-            `SELECT 
+             `SELECT 
                 dh.decision_id,
                 d.decision_name,
                 v.id AS v_id,
+                h.header_id,
                 h.header_name,
                 v.header_value,
                 h.type_of_profile
             FROM 
                 techcoach_lite.techcoach_decision_swot_linked_info dh
             JOIN 
-                techcoach_lite.techcoach_decision d ON dh.decision_id = d.decision_id
+                techcoach_lite.techcoach_decision d 
+                ON dh.decision_id = d.decision_id
             JOIN 
-                techcoach_lite.techcoach_profile_swot_values v ON dh.v_id = v.id
+                techcoach_lite.techcoach_profile_swot_values v 
+                ON dh.v_id = v.id
             JOIN 
-                techcoach_lite.techcoach_profile_swot_headers h ON v.header_id = h.header_id 
+                techcoach_lite.techcoach_profile_swot_headers h 
+                ON v.header_id = h.header_id
             WHERE 
-                d.user_id = ?`,
+                d.user_id = ?
+                AND h.type_of_profile = 'Advanced_Profile'`,
             [userId]
         );
+
 
         if (!rows || rows.length === 0) {
             return res.status(404).json({ message: 'No Profile records found' });
         }
-
-        const decryptText = (text, key) => {
-            if (!text) return null;
-            try {
-                const decipher = crypto.createDecipher('aes-256-cbc', key);
-                let decryptedText = decipher.update(text, 'hex', 'utf-8');
-                decryptedText += decipher.final('utf-8');
-                return decryptedText;
-            } catch (error) {
-                console.error('Error decrypting text:', error);
-                return null;
-            }
-        };
 
         const decryptedProfileRows = rows.map(row => ({
             ...row,

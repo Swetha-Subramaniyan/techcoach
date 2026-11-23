@@ -256,7 +256,7 @@ const getAdvancedProfile = async (req, res) => {
   }
 };
 
-const putAdvancedProfile = async (req, res) => {
+/* const putAdvancedProfile = async (req, res) => {
   const { goals, values, resolutions, constraints, other_factors } = req.body;
   const userKey = req.user.key;
 
@@ -359,6 +359,193 @@ const putAdvancedProfile = async (req, res) => {
     console.error("Error updating general profile data:", error);
     if (conn) {
       await conn.rollback();
+    }
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing your request" });
+  } finally {
+    if (conn) conn.release();
+  }
+}; */
+
+const putAdvancedProfile = async (req, res) => {
+  const { goals, values, resolutions, constraints, other_factors } = req.body;
+  const userKey = req.user.key;
+
+  let conn;
+  try {
+    conn = await getConnection();
+    await conn.beginTransaction();
+
+    const userId = req.user.id;
+
+    const headersAndValues = [
+      { headerName: "Goals", headerValue: goals },
+      { headerName: "Values", headerValue: values },
+      { headerName: "Resolutions", headerValue: resolutions },
+      { headerName: "Constraints", headerValue: constraints },
+      { headerName: "OtherFactors", headerValue: other_factors },
+    ];
+
+    const safeDecrypt = (text) => {
+      if (!text) return text;
+      try {
+        return decryptText(text, userKey);
+      } catch {
+        return null;
+      }
+    };
+
+    const norm = (s) => (typeof s === "string" ? s.trim() : "");
+
+    const plan = [];           
+    const allToDelete = [];    
+
+    for (const { headerName, headerValue } of headersAndValues) {
+      if (!headerValue || headerValue.length === 0) continue;
+
+      const headerRows = await conn.query(
+        "SELECT header_id FROM techcoach_lite.techcoach_profile_swot_headers WHERE header_name = ? AND type_of_profile = 'Advanced_Profile'",
+        [headerName],
+      );
+      const headerId = headerRows[0]?.header_id;
+      if (!headerId) {
+        throw new Error(`Header ID not found for header name: ${headerName}`);
+      }
+
+      const existingRows = await conn.query(
+        `SELECT id, header_value
+         FROM techcoach_lite.techcoach_profile_swot_values
+         WHERE user_id = ? AND header_id = ?`,
+        [userId, headerId],
+      );
+
+      const existingMap = new Map();
+      for (const row of existingRows) {
+        const plain = safeDecrypt(row.header_value);
+        if (plain === null) continue;
+        const key = norm(plain);
+        if (key && !existingMap.has(key)) {
+          existingMap.set(key, row.id);
+        }
+      }
+
+      const incoming = (Array.isArray(headerValue) ? headerValue : [headerValue])
+        .map(norm)
+        .filter((v) => v !== "");
+
+      const seen = new Set();
+      const valuesToKeep = [];
+      for (const v of incoming) {
+        if (!seen.has(v)) {
+          seen.add(v);
+          valuesToKeep.push(v);
+        }
+      }
+
+      const toUpdate = []; 
+      const toInsert = []; 
+      const keptIds = new Set();
+
+      for (const v of valuesToKeep) {
+        if (existingMap.has(v)) {
+          const id = existingMap.get(v);
+          toUpdate.push({ id, value: v });
+          keptIds.add(id);
+        } else {
+          toInsert.push(v);
+        }
+      }
+
+      const valuesToDelete = [];
+      for (const [key, id] of existingMap.entries()) {
+        if (!keptIds.has(id)) valuesToDelete.push(id);
+      }
+
+      plan.push({ headerName, headerId, toUpdate, toInsert, valuesToDelete });
+      allToDelete.push(...valuesToDelete);
+    }
+
+    if (allToDelete.length > 0) {
+      const linkedRows = await conn.query(
+        `SELECT
+           l.v_id,
+           p.header_value,
+           h.header_name,
+           d.decision_id,
+           d.decision_name
+         FROM techcoach_lite.techcoach_decision_swot_linked_info l
+         LEFT JOIN techcoach_lite.techcoach_decision d
+           ON d.decision_id = l.decision_id
+         LEFT JOIN techcoach_lite.techcoach_profile_swot_values p
+           ON p.id = l.v_id
+         LEFT JOIN techcoach_lite.techcoach_profile_swot_headers h
+           ON h.header_id = p.header_id
+         WHERE l.v_id IN (?)`,
+        [allToDelete],
+      );
+
+      if (linkedRows.length > 0) {
+        await conn.rollback();
+        return res.status(409).json({
+          error: "LINKED_VALUES",
+          message: `Cannot remove value(s) because they are linked to existing decision(s).`,
+          linked: linkedRows.map((r) => ({
+            v_id: r.v_id,
+            v_header: safeDecrypt(r.header_value),
+            header_name: r.header_name,
+            decision_id: r.decision_id,
+            decision_name:
+              safeDecrypt(r.decision_name) || `Decision #${r.decision_id}`,
+          })),
+        });
+      }
+    }
+
+    for (const { headerId, toUpdate, toInsert, valuesToDelete } of plan) {
+      for (const { id, value } of toUpdate) {
+        const encrypted = encryptText(value, userKey);
+        await conn.query(
+          `UPDATE techcoach_lite.techcoach_profile_swot_values
+           SET header_value = ?
+           WHERE id = ? AND user_id = ? AND header_id = ?`,
+          [encrypted, id, userId, headerId],
+        );
+      }
+
+      for (const value of toInsert) {
+        const encrypted = encryptText(value, userKey);
+        await conn.query(
+          `INSERT INTO techcoach_lite.techcoach_profile_swot_values
+             (user_id, header_id, header_value)
+           VALUES (?, ?, ?)`,
+          [userId, headerId, encrypted],
+        );
+      }
+
+      if (valuesToDelete.length > 0) {
+        await conn.query(
+          `DELETE FROM techcoach_lite.techcoach_profile_swot_values
+           WHERE id IN (?) AND user_id = ?`,
+          [valuesToDelete, userId],
+        );
+      }
+    }
+
+    await conn.commit();
+    res
+      .status(200)
+      .json({ message: "General Advanced Profile data updated successfully" });
+  } catch (error) {
+    console.error("Error updating general profile data:", error);
+    if (conn) await conn.rollback();
+
+    if (error?.code === "ER_ROW_IS_REFERENCED_2") {
+      return res.status(409).json({
+        error: "LINKED_VALUES",
+        message:
+          "Cannot remove value(s) because they are linked to an existing decision. Please unlink them first.",
+      });
     }
     res
       .status(500)

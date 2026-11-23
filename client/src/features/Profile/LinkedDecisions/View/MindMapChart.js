@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getAllProfileLink, getAllSkillLink } from '../../../../api/Decision_Link/Network_Call';
+import {
+  getAllProfileLink,
+  getAllSkillLink,
+  getAllAdvancedProfileLink,   
+} from '../../../../api/Decision_Link/Network_Call';
 
 const MindMapView = ({ onNodeSelect }) => {
   const [profiles, setProfiles] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [advancedProfiles, setAdvancedProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -11,18 +16,21 @@ const MindMapView = ({ onNodeSelect }) => {
     root: true,
     swot_group: true,
     skills_group: true,
+    advanced_group: true,
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [profileRes, skillRes] = await Promise.all([
+        const [profileRes, skillRes, advancedRes] = await Promise.all([
           getAllProfileLink(),
           getAllSkillLink(),
+          getAllAdvancedProfileLink(), 
         ]);
         setProfiles(profileRes.profiles || []);
         setSkills(skillRes.skills || []);
+        setAdvancedProfiles(advancedRes.profiles || []); 
       } catch (err) {
         setError(err.message || 'Failed to load mind map data');
       } finally {
@@ -58,6 +66,20 @@ const MindMapView = ({ onNodeSelect }) => {
     if (!acc[key]) {
       acc[key] = {
         name: key,
+        metadata: item,
+        decisions: [],
+      };
+    }
+    acc[key].decisions.push(item);
+    return acc;
+  }, {});
+
+  const groupedAdvanced = advancedProfiles.reduce((acc, item) => {
+    const key = `${item.header_name} - ${item.header_value}`;
+    if (!acc[key]) {
+      acc[key] = {
+        name: key,
+        type: item.header_name,
         metadata: item,
         decisions: [],
       };
@@ -109,6 +131,59 @@ const MindMapView = ({ onNodeSelect }) => {
                           className={`mindmap-node attribute-node swot-${group.type?.toLowerCase()}`}
                           onClick={() => {
                             toggleNode(`prof_${attrKey}`);
+                            if (onNodeSelect) onNodeSelect(group.metadata);
+                          }}
+                        >
+                          <div className="node-content">
+                            <strong>{group.name}</strong>
+                            <span className="badges">{group.decisions.length}</span>
+                          </div>
+                          <span className="toggle-indicator">
+                            {isExpanded ? '▾' : '▸'}
+                          </span>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="mindmap-leaf-nodes">
+                            {group.decisions.map((dec, idx) => (
+                              <div
+                                key={idx}
+                                className="mindmap-node decision-node"
+                                onClick={() => onNodeSelect && onNodeSelect(dec)}
+                              >
+                                🎯 {dec.decision_name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mindmap-branch">
+              <div
+                className="mindmap-node category-node advanced"
+                onClick={() => toggleNode('advanced_group')}
+              >
+                <span>Advanced Profiles ({Object.keys(groupedAdvanced).length})</span>
+                <span className="toggle-indicator">
+                  {expandedNodes.advanced_group ? '▾' : '▸'}
+                </span>
+              </div>
+
+              {expandedNodes.advanced_group && (
+                <div className="mindmap-subbranches">
+                  {Object.entries(groupedAdvanced).map(([attrKey, group]) => {
+                    const isExpanded = !!expandedNodes[`adv_${attrKey}`];
+                    return (
+                      <div key={attrKey} className="mindmap-attribute-block">
+                        <div
+                          className={`mindmap-node attribute-node advanced-item`}
+                          onClick={() => {
+                            toggleNode(`adv_${attrKey}`);
                             if (onNodeSelect) onNodeSelect(group.metadata);
                           }}
                         >

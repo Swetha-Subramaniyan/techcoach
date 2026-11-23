@@ -207,6 +207,11 @@
   box-shadow: var(--shadow-md);
 }
 
+.category-node.advanced {
+  background: #e8f0fe;
+  border-left: 4px solid #4285f4;
+}
+
 .swot-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
